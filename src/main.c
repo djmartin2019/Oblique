@@ -4,6 +4,7 @@
 #include "map.h"
 #include "render.h"
 #include "player.h"
+#include "camera.h"
 
 int main(int argc, char*argv[]) {
     SDL_Window* window = NULL;
@@ -67,8 +68,12 @@ int main(int argc, char*argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        draw_map(renderer);
-        draw_player(&player,renderer);
+        Camera camera;
+        update_camera(&camera, player.x, player.y);
+
+        draw_map(renderer, &camera);
+        calculate_map_offset();
+        draw_player(&player,renderer, &camera);
 
         SDL_RenderPresent(renderer);
 
