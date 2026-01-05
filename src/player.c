@@ -1,5 +1,6 @@
 #include "player.h"
 #include "render.h" // for TILE_WIDTH and TILE_HEIGHT
+#include "camera.h"
 #include <SDL2/SDL_image.h>
 
 #define MAP_WIDTH 10
@@ -37,14 +38,17 @@ void handle_player_input(Player* player, const Uint8* keystates) {
     }
 }
 
-void draw_player(Player* player, SDL_Renderer* renderer) {
-    int screen_x = (player->x - player->y) * (TILE_WIDTH / 2) + 400;
-    int screen_y = (player->x + player->y) * (TILE_HEIGHT / 2) + 50;
+// Draws the player relative to the camera + map offset, centered on their tile
+void draw_player(Player* player, SDL_Renderer* renderer, Camera* cam) {
+    // Get player's isometric screen position relative to the camera and map offset
+    int screen_x = (player->x - player->y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
+    int screen_y = (player->x + player->y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
 
-    // Adjust so the sprite is centered over the tile
+    // Adjust drawing rectangle to center the player sprite on the tile
+    // Assumes the sprite is 32x64px, with the feet at the tile center
     SDL_Rect dest = {
-        screen_x - 16,      // 32px wide sprite
-        screen_y - 48,      // 64px tall sprite, bottom on tile
+        screen_x - 16,      // Shift left half the sprite's width
+        screen_y - 48,      // Shift up so the feet sit on tile
         32,
         64
     };

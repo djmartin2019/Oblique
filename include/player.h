@@ -1,6 +1,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include "camera.h"
 #include <SDL2/SDL.h>
 
 typedef struct {
@@ -10,6 +11,6 @@ typedef struct {
 
 int init_player(Player* player, SDL_Renderer* renderer);
 void handle_player_input(Player* player, const Uint8* keystates);
-void draw_player(Player* player, SDL_Renderer* renderer);
+void draw_player(Player* player, SDL_Renderer* renderer, struct Camera* cam);
 
 #endif
