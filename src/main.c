@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "map.h"
 #include "render.h"
+#include "player.h"
 
 int main(int argc, char*argv[]) {
     SDL_Window* window = NULL;
@@ -47,21 +48,31 @@ int main(int argc, char*argv[]) {
         goto cleanup;
     }
 
+    Player player;
+    if (!init_player(&player, renderer)) return 1;
+
     // Main loop
     int running = 1;
     SDL_Event e;
 
     while (running) {
+        const Uint8* keystates = SDL_GetKeyboardState(NULL);
+
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
         }
+
+        handle_player_input(&player, keystates);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         draw_map(renderer);
+        draw_player(&player,renderer);
 
         SDL_RenderPresent(renderer);
+
+        SDL_Delay(100);
     }
 
     success = 1; // Program ran successfully
