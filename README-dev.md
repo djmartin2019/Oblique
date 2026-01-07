@@ -12,6 +12,7 @@ The engine simulates an old-school isometric view, like Fallout 1/2 or tactics R
 * **Isometric projection** — Grid coordinates are converted to diamond-shaped screen positions.
 * **Camera** — Moves around the world to keep the player centered.
 * **Map offset** — Centers the map when the game starts.
+* **Entity system** — Tracks and renders all game objects (player, NPCs, props)
 
 ---
 
@@ -96,6 +97,53 @@ SDL_Rect dest = {
     64
 };
 ```
+
+---
+
+## 👥 Entity System Overview
+
+### `Entity` Struct Example:
+
+```c
+typedef struct {
+    int x, y; // Tile position
+    SDL_Texture* sprite;
+    int width, height; // Sprite size
+    int offset_x, offset_y; // Visual offsets for drawing
+    int is_player; // Flag to identify the player
+} Entity;
+```
+
+### Purpose:
+
+* Consolidates players, NPCs, and props into a single system
+* Allows iteration, update, and rendering in one place
+* Will support depth sorting (by `y`) so that visuals overlap correctly
+
+### Drawing Entities:
+
+```c
+void draw_entities(SDL_Renderer* renderer, Camera* cam) {
+    // Sort entities by y for proper isometric layering (not implemented yet)
+    for (int i = 0; i < entity_count; i++) {
+        Entity* e = &entities[i];
+
+        int screen_x = (e->x - e->y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
+        int screen_y = (e->x + e->y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
+
+        SDL_Rect dest = {
+            screen_x + e->offset_x,
+            screen_y + e->offset_y,
+            e->width,
+            e->height
+        };
+
+        SDL_RenderCopy(renderer, e->sprite, NULL, &dest);
+    }
+}
+```
+
+This system will allow Oblique to support more complex world logic (dialogue, AI, interaction, etc).
 
 ---
 
