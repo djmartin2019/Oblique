@@ -1,6 +1,7 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "camera.h"
 #include <SDL2/SDL.h>
 
 #define MAX_ENTITIES 128
@@ -18,6 +19,6 @@ extern int entity_count;
 
 void init_entities();
 int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int offset_x, int offset_y, int is_player);
-void draw_entities(SDL_Renderer* renderer, struct Camera* cam);
+void draw_entities(SDL_Renderer* renderer, Camera* cam);
 
 #endif

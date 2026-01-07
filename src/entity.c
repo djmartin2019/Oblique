@@ -25,7 +25,7 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     return entity_count - 1; // Return index
 }
 
-void draw_entities(SDL_Renderer* renderer, Camera* am) {
+void draw_entities(SDL_Renderer* renderer, Camera* cam) {
     for (int i = 0; i < entity_count; i++) {
         Entity* e = &entities[i];
 
