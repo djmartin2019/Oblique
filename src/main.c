@@ -6,13 +6,12 @@
 #include "camera.h"
 #include "entity.h"
 #include "behavior.h"
+#include "scene.h"
 
 int main(int argc, char*argv[]) {
     SDL_Window* window = NULL;
     SDL_Renderer* renderer = NULL;
     int success = 0;
-
-    int player_index = -1;
 
     // Initalize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -66,13 +65,13 @@ int main(int argc, char*argv[]) {
     SDL_FreeSurface(surface);
 
     // Add player to entity list
-    player_index = add_entity(
-            5,5,            // position
-            player_texture, // texture
-            32, 64,         // dimensions
-            -16, -48,       // offset for centering
-            1,              // is_player
-            player_behavior // player movement
+    add_entity(
+        5,5,            // position
+        player_texture, // texture
+        32, 64,         // dimensions
+        -16, -48,       // offset for centering
+        1,              // is_player
+        player_behavior // player movement
     );
 
     // Add test NPC
@@ -85,6 +84,11 @@ int main(int argc, char*argv[]) {
     entities[npc_id].sprite_idle    = npc_tex;
     entities[npc_id].sprite_wander  = npc_tex;
     entities[npc_id].sprite_chase   = npc_tex;
+
+    // ------------------------------------------
+    // Set map on current scene
+    // ------------------------------------------
+    set_scene(SCENE_EXPLORE);
 
     // Main game loop
     int running = 1;
@@ -101,21 +105,14 @@ int main(int argc, char*argv[]) {
         set_player_input(keystates);
 
         // Let all entities update (including player AI or input)
-        update_entities();
+        update_scene();
 
-        // Update camera to follow player
-        Entity* player = &entities[player_index];
-        Camera camera;
-        update_camera(&camera, player->x, player->y);
-
-        // Clear screen
+        // Clear screen first
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
         // Draw world and entities
-        draw_map(renderer, &camera);
-        draw_entities(renderer, &camera);
-        calculate_map_offset();
+        render_scene(renderer);
 
         // Present the final frame
         SDL_RenderPresent(renderer);
