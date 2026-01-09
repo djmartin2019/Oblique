@@ -17,9 +17,9 @@ This is a masochistically low-level engine being built from scratch using C and 
 * [x] Basic UI system
 * [x] Entity system with behavior functions
 * [x] NPC AI system (idle, wander, chase behaviors)
-* [x] Collision detection system
 * [x] Scene management system
-* [x] Inventory screen with three dumb items
+* [ ] Inventory screen with three dumb items
+* [ ] Collision detection system
 * [ ] Combat system
 * [ ] Quests and triggers
 * [ ] Save/load system
