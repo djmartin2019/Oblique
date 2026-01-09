@@ -1,10 +1,87 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
+
 #include "entity.h"
 #include "behavior.h"
+#include "ai.h"
+#include "render.h"
 
-// Player behavior
-const Uint8* keystates = NULL;
+static const Uint8* keystates = NULL;
+
+// -----------------------------------------
+// AI Transition Conditions (Stubs for now)
+// -----------------------------------------
+
+int should_wander() { return rand() % 200 == 0; }   // Wander occasionally
+
+int sees_player(Entity* self) {
+    for (int i = 0; i < entity_count; i++) {
+        Entity* other = &entities[i];
+        if (other->is_player) {
+            int dx = abs(other->x - self->x);
+            int dy = abs(other->y - self->y);
+            return (dx + dy) <= 5;                  // Within distance of 5
+        }
+    }
+
+    return 0;
+}
+
+int lost_player(Entity* self) {
+    for (int i = 0; i < entity_count; i++) {
+        Entity* other = &entities[i];
+        if (other->is_player) {
+            int dx = abs(other->x - self->x);
+            int dy = abs(other->y - self->y);
+            return (dx + dy) > 7;                   // Loses player when it's 7 or more tiles away
+        }
+    }
+    return 0;
+}
+
+// -----------------------------------------
+// NPC API Brain
+// -----------------------------------------
+
+void npc_brain(Entity* self) {
+    switch (self->state) {
+        case STATE_IDLE:
+            if (should_wander()) {
+                self->state = STATE_WANDER;
+                self->behavior = wander_behavior;
+            }
+            break;
+        case STATE_WANDER:
+            if (sees_player(self)) {
+                self->state = STATE_CHASE;
+                self->behavior = chase_behavior;
+            }
+            break;
+        case STATE_CHASE:
+            if (lost_player(self)) {
+                self->state = STATE_IDLE;
+                self->behavior = idle_behavior;
+            }
+            break;
+    }
+
+    // Change sprite based on current state
+    switch (self->state) {
+        case STATE_IDLE:
+            self->sprite = self->sprite_idle ? self->sprite_idle : self->sprite;
+            break;
+        case STATE_WANDER:
+            self->sprite = self->sprite_wander ? self->sprite_wander : self->sprite;
+            break;
+        case STATE_CHASE:
+            self->sprite = self->sprite_chase ? self->sprite_chase : self->sprite;
+            break;
+    }
+}
+
+// -----------------------------------------
+// Player Behavior
+// -----------------------------------------
 
 void set_player_input(const Uint8* state) {
     keystates = state;
@@ -19,7 +96,10 @@ void player_behavior(Entity* self) {
     if (keystates[SDL_SCANCODE_RIGHT])  self->x += 1;
 }
 
+// -----------------------------------------
 // NPC behavior
+// -----------------------------------------
+
 void wander_behavior(Entity* self) {
     if (rand() % 100 < 2) {
         int dir = rand() % 4;
@@ -28,4 +108,17 @@ void wander_behavior(Entity* self) {
         if (dir == 2) self->y += 1;
         if (dir == 3) self->y -= 1;
     }
+}
+
+void chase_behavior(Entity* self) {
+    // placeholder: maybe move toward (5,5) for now
+    if (self->x < 5) self->x++;
+    else if (self->x > 5) self->x--;
+
+    if (self->y < 5) self->y++;
+    else if (self->y > 5) self->y--;
+}
+
+void idle_behavior(Entity* self) {
+    // do nothing for now
 }

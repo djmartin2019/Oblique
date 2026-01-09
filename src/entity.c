@@ -1,6 +1,7 @@
 #include "entity.h"
 #include "camera.h"
 #include "render.h"     //For TILE_WIDTH / TILE_HEIGHT
+#include "behavior.h"
 
 Entity entities[MAX_ENTITIES];
 int entity_count = 0;
@@ -40,14 +41,42 @@ void draw_entities(SDL_Renderer* renderer, Camera* cam) {
             e->height
         };
 
+        // Set sprite color tint based on AI state
+        if (!e->is_player) {
+            switch (e->state) {
+                case STATE_IDLE:
+                    SDL_SetTextureColorMod(e->sprite, 64, 64, 64);      // gray
+                    break;
+                case STATE_WANDER:
+                    SDL_SetTextureColorMod(e->sprite, 0, 255, 0);       // green
+                    break;
+                case STATE_CHASE:
+                    SDL_SetTextureColorMod(e->sprite, 255, 0, 0);       // red
+                    break;
+                default:
+                    SDL_SetTextureColorMod(e->sprite, 255, 255, 255);   // default white
+                    break;
+            }
+        } else {
+            SDL_SetTextureColorMod(e->sprite, 255, 255, 255);           // Player always render full color
+        }
+
         SDL_RenderCopy(renderer, e->sprite, NULL, &dest);
     }
 }
 
 void update_entities() {
     for (int i = 0; i < entity_count; i++) {
-        if (entities[i].behavior) {
-            entities[i].behavior(&entities[i]);
+        Entity* e = &entities[i];
+
+        // Let the AI update it's brain before acting
+        if (!e->is_player) {
+            npc_brain(e);
+        }
+
+        // Then run its behavior
+        if (e->behavior) {
+            e->behavior(e);
         }
     }
 }
