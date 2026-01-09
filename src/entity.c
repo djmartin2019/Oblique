@@ -9,7 +9,7 @@ void init_entities() {
     entity_count = 0;
 }
 
-int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int offset_x, int offset_y, int is_player) {
+int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int offset_x, int offset_y, int is_player, BehaviorFunc behavior) {
     if (entity_count >= MAX_ENTITIES) return -1;
 
     Entity* e = &entities[entity_count++];
@@ -21,6 +21,7 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     e->offset_x = offset_x;
     e->offset_y = offset_y;
     e->is_player = is_player;
+    e->behavior = behavior;
 
     return entity_count - 1; // Return index
 }
@@ -40,5 +41,13 @@ void draw_entities(SDL_Renderer* renderer, Camera* cam) {
         };
 
         SDL_RenderCopy(renderer, e->sprite, NULL, &dest);
+    }
+}
+
+void update_entities() {
+    for (int i = 0; i < entity_count; i++) {
+        if (entities[i].behavior) {
+            entities[i].behavior(&entities[i]);
+        }
     }
 }

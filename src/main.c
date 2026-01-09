@@ -5,6 +5,7 @@
 #include "render.h"
 #include "camera.h"
 #include "entity.h"
+#include "behavior.h"
 
 int main(int argc, char*argv[]) {
     SDL_Window* window = NULL;
@@ -70,7 +71,8 @@ int main(int argc, char*argv[]) {
             player_texture, // texture
             32, 64,         // dimensions
             -16, -48,       // offset for centering
-            1               // is_player
+            1,              // is_player
+            player_behavior // player movement
     );
 
     // Add test NPC
@@ -78,9 +80,9 @@ int main(int argc, char*argv[]) {
     SDL_Texture* npc_tex  = SDL_CreateTextureFromSurface(renderer, npc_surf);
     SDL_FreeSurface(npc_surf);
 
-    add_entity(6, 5, npc_tex, 32, 64, -16, -48, 0);
-    add_entity(7, 4, npc_tex, 32, 64, -16, -48, 0);
-    add_entity(4, 6, npc_tex, 32, 64, -16, -48, 0);
+    add_entity(6, 5, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
+    add_entity(7, 4, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
+    add_entity(4, 6, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
 
     // Main game loop
     int running = 1;
@@ -93,14 +95,14 @@ int main(int argc, char*argv[]) {
             if (e.type == SDL_QUIT) running = 0;
         }
 
-        // Basit player movement via arrow keys
-        Entity* player = &entities[player_index];
-        if (keystates[SDL_SCANCODE_UP])     player->y -= 1;
-        if (keystates[SDL_SCANCODE_DOWN])   player->y += 1;
-        if (keystates[SDL_SCANCODE_LEFT])   player->x -= 1;
-        if (keystates[SDL_SCANCODE_RIGHT])  player->x += 1;
+        // Feed input into player behavior system
+        set_player_input(keystates);
+
+        // Let all entities update (including player AI or input)
+        update_entities();
 
         // Update camera to follow player
+        Entity* player = &entities[player_index];
         Camera camera;
         update_camera(&camera, player->x, player->y);
 
