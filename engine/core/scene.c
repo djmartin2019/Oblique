@@ -1,10 +1,10 @@
-#include "scene.h"
-#include "entity.h"
-#include "camera.h"
-#include "render.h"
-#include "map.h"
-#include "behavior.h"
-#include "constants.h"
+#include "core/scene.h"
+#include "entity/entity.h"
+#include "render/camera.h"
+#include "render/render.h"
+#include "core/map.h"
+#include "ai/behavior.h"
+#include "core/constants.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>

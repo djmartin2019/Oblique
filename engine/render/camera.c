@@ -1,6 +1,6 @@
-#include "camera.h"
-#include "render.h" // For TILE_WIDTH and TILE_HEIGHT
-#include "map.h"    // For MAP_WIDTH / MAP_HEIGHT
+#include "render/camera.h"
+#include "render/render.h" // For TILE_WIDTH and TILE_HEIGHT
+#include "core/map.h"    // For MAP_WIDTH / MAP_HEIGHT
 
 int map_offset_x = 0;
 int map_offset_y = 0;

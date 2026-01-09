@@ -1,4 +1,5 @@
-#include "sdl_helpers.h"
+#include "helpers/sdl_helpers.h"
+
 #include <stdio.h>
 
 int init_sdl(SDL_Window** window, SDL_Renderer** renderer) {

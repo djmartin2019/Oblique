@@ -1,7 +1,8 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "camera.h"
+#include "render/camera.h"
+
 #include <SDL2/SDL.h>
 
 #define TILE_WIDTH 64

@@ -1,6 +1,8 @@
-#include "render.h"
-#include "map.h"
-#include "camera.h"
+#include "render/render.h"
+#include "core/map.h"
+#include "render/camera.h"
+#include "core/constants.h"
+
 #include <SDL2/SDL_image.h>
 
 #define TILE_WIDTH 64
@@ -9,7 +11,7 @@
 SDL_Texture* tile_textures[1]; // Only 1 tile for now
 
 int load_tile_textures(SDL_Renderer* renderer) {
-    SDL_Surface* surface = IMG_Load("assets/tiles/grass.png");
+    SDL_Surface* surface = IMG_Load(GRASS_TILE);
     if (!surface) {
         printf("Failed to load tile: %s\n", SDL_GetError());
         return 0;

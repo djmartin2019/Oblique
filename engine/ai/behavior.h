@@ -1,7 +1,7 @@
 #ifndef BEHAVIOR_H
 #define BEHAVIOR_H
 
-#include "entity.h"
+#include "entity/entity.h"
 
 void wander_behavior(Entity* self);
 void player_behavior(Entity* self);

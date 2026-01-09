@@ -1,8 +1,9 @@
-#include "player.h"
-#include "render.h" // for TILE_WIDTH and TILE_HEIGHT
-#include "camera.h"
-#include "constants.h"
-#include "map.h"
+#include "entity/player.h"
+#include "render/render.h" // for TILE_WIDTH and TILE_HEIGHT
+#include "render/camera.h"
+#include "core/constants.h"
+#include "core/map.h"
+
 #include <SDL2/SDL_image.h>
 
 int init_player(Player* player, SDL_Renderer* renderer) {
