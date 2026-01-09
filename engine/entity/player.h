@@ -1,7 +1,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "camera.h"
+#include "render/camera.h"
+
 #include <SDL2/SDL.h>
 
 typedef struct {

@@ -1,13 +1,15 @@
+#include "core/map.h"
+#include "render/render.h"
+#include "render/camera.h"
+#include "entity/entity.h"
+#include "ai/behavior.h"
+#include "core/scene.h"
+#include "helpers/sdl_helpers.h"
+
+#include <stdio.h>
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <stdio.h>
-#include "map.h"
-#include "render.h"
-#include "camera.h"
-#include "entity.h"
-#include "behavior.h"
-#include "scene.h"
-#include "sdl_helpers.h"
 
 void game_loop(SDL_Renderer* renderer) {
     // Main game loop

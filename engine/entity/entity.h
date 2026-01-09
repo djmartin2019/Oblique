@@ -1,8 +1,9 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
-#include "camera.h"
-#include "ai.h"
+#include "render/camera.h"
+#include "ai/ai.h"
+
 #include <SDL2/SDL.h>
 
 #define MAX_ENTITIES 128

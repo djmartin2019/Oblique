@@ -1,7 +1,7 @@
-#include "entity.h"
-#include "camera.h"
-#include "render.h"     //For TILE_WIDTH / TILE_HEIGHT
-#include "behavior.h"
+#include "entity/entity.h"
+#include "render/camera.h"
+#include "render/render.h"     //For TILE_WIDTH / TILE_HEIGHT
+#include "ai/behavior.h"
 
 Entity entities[MAX_ENTITIES];
 int entity_count = 0;

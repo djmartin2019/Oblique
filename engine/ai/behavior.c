@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
-#include "entity.h"
-#include "behavior.h"
-#include "ai.h"
-#include "render.h"
+#include "entity/entity.h"
+#include "ai/behavior.h"
+#include "ai/ai.h"
+#include "render/render.h"
 
 static const Uint8* keystates = NULL;
 static int chase_timer = 0;

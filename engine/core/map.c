@@ -1,4 +1,4 @@
-#include "map.h"
+#include "core/map.h"
 #include <stdio.h>
 
 int tile_map[MAP_HEIGHT][MAP_WIDTH];
