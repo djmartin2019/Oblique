@@ -83,9 +83,7 @@ void update_entities() {
 
 Entity* get_player() {
     for (int i = 0; i < entity_count; i++) {
-        if (entities[i].is_player) {
-            return &entities[i];
-        }
+        if (entities[i].is_player) return &entities[i];
     }
     return NULL;
 }
