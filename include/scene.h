@@ -6,13 +6,14 @@
 typedef enum {
     SCENE_EXPLORE,
     SCENE_COMBAT,
-} GameScene;
+} SceneType;
 
-void set_scene(GameScene scene);
+void set_scene(SceneType type, SDL_Renderer* renderer);
 
-GameScene get_scene();
+SceneType get_scene();
 
 void update_scene();
+void setup_explore_scene(SDL_Renderer* renderer);
 void render_scene(SDL_Renderer* renderer);
 
 #endif
