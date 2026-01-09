@@ -80,7 +80,7 @@ int main(int argc, char*argv[]) {
     SDL_Texture* npc_tex  = SDL_CreateTextureFromSurface(renderer, npc_surf);
     SDL_FreeSurface(npc_surf);
 
-    int npc_id = add_entity(6, 5, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
+    int npc_id = add_entity(10, 10, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
     entities[npc_id].state = STATE_IDLE;
     entities[npc_id].sprite_idle    = npc_tex;
     entities[npc_id].sprite_wander  = npc_tex;
