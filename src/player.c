@@ -1,16 +1,15 @@
 #include "player.h"
 #include "render.h" // for TILE_WIDTH and TILE_HEIGHT
 #include "camera.h"
+#include "constants.h"
+#include "map.h"
 #include <SDL2/SDL_image.h>
-
-#define MAP_WIDTH 10
-#define MAP_HEIGHT 10
 
 int init_player(Player* player, SDL_Renderer* renderer) {
     player->x = 5;
     player->y = 5;
 
-    SDL_Surface* surface = IMG_Load("assets/sprites/player.png");
+    SDL_Surface* surface = IMG_Load(PLAYER_SPRITE);
     if (!surface) {
         printf("Failed to load player sprite: %s\n", SDL_GetError());
         return 0;

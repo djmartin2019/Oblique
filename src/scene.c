@@ -4,6 +4,7 @@
 #include "render.h"
 #include "map.h"
 #include "behavior.h"
+#include "constants.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -18,13 +19,13 @@ SceneType get_scene() {
 
 void setup_explore_scene(SDL_Renderer* renderer) {
     init_entities();        // resets entities array
-    load_map("maps/test_map.txt");
+    load_map(DEFAULT_MAP);
     load_tile_textures(renderer);
 
     calculate_map_offset();
 
     // Load player sprites
-    SDL_Surface* surface = IMG_Load("assets/sprites/player.png");
+    SDL_Surface* surface = IMG_Load(PLAYER_SPRITE);
     SDL_Texture* player_texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
@@ -38,7 +39,7 @@ void setup_explore_scene(SDL_Renderer* renderer) {
     );
 
     // NPC sprite (shared for idle/wander/chase for now)
-    SDL_Surface* npc_surf = IMG_Load("assets/sprites/npc.png");
+    SDL_Surface* npc_surf = IMG_Load(NPC_SPRITE);
     SDL_Texture* npc_tex  = SDL_CreateTextureFromSurface(renderer, npc_surf);
     SDL_FreeSurface(npc_surf);
 
