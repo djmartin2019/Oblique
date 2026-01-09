@@ -51,44 +51,19 @@ int main(int argc, char*argv[]) {
         goto cleanup;
     }
 
-    // Initialize entity system
-    init_entities();
-    calculate_map_offset();
-
     // Load player sprite
     SDL_Surface* surface = IMG_Load("assets/sprites/player.png");
     if (!surface) {
         printf("Failed to load player sprite: %s\n", SDL_GetError());
         return 1;
     }
-    SDL_Texture* player_texture = SDL_CreateTextureFromSurface(renderer, surface);
+
     SDL_FreeSurface(surface);
-
-    // Add player to entity list
-    add_entity(
-        5,5,            // position
-        player_texture, // texture
-        32, 64,         // dimensions
-        -16, -48,       // offset for centering
-        1,              // is_player
-        player_behavior // player movement
-    );
-
-    // Add test NPC
-    SDL_Surface* npc_surf = IMG_Load("assets/sprites/npc.png");
-    SDL_Texture* npc_tex  = SDL_CreateTextureFromSurface(renderer, npc_surf);
-    SDL_FreeSurface(npc_surf);
-
-    int npc_id = add_entity(10, 10, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
-    entities[npc_id].state = STATE_IDLE;
-    entities[npc_id].sprite_idle    = npc_tex;
-    entities[npc_id].sprite_wander  = npc_tex;
-    entities[npc_id].sprite_chase   = npc_tex;
 
     // ------------------------------------------
     // Set map on current scene
     // ------------------------------------------
-    set_scene(SCENE_EXPLORE);
+    set_scene(SCENE_EXPLORE, renderer);
 
     // Main game loop
     int running = 1;
