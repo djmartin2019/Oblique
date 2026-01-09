@@ -33,6 +33,8 @@ struct Entity {
 extern Entity entities[MAX_ENTITIES];
 extern int entity_count;
 
+Entity* get_player();
+
 void init_entities();
 int add_entity(
         int x,

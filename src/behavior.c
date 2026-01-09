@@ -7,6 +7,7 @@
 #include "render.h"
 
 static const Uint8* keystates = NULL;
+static int chase_timer = 0;
 
 // -----------------------------------------
 // AI Transition Conditions (Stubs for now)
@@ -111,12 +112,18 @@ void wander_behavior(Entity* self) {
 }
 
 void chase_behavior(Entity* self) {
-    // placeholder: maybe move toward (5,5) for now
-    if (self->x < 5) self->x++;
-    else if (self->x > 5) self->x--;
+    Entity* player = get_player();
 
-    if (self->y < 5) self->y++;
-    else if (self->y > 5) self->y--;
+    if (!player) return; // Safety check
+
+    if (++chase_timer % 10 != 0) return; // Only moves every 10 ticks
+
+    // Simple tile-by-tile movement towards player
+    if (self->x < player->x) self->x++;
+    else if (self->x > player->x) self->x--;
+
+    if (self->y < player->y) self->y++;
+    else if (self->y > player->y) self->y--;
 }
 
 void idle_behavior(Entity* self) {
