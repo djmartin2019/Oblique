@@ -19,6 +19,8 @@ SceneType get_scene() {
 void setup_explore_scene(SDL_Renderer* renderer) {
     init_entities();        // resets entities array
     load_map("maps/test_map.txt");
+    load_tile_textures(renderer);
+
     calculate_map_offset();
 
     // Load player sprites

@@ -3,7 +3,7 @@ CFLAGS = -Wall -std=c99 -Iinclude
 SDL_CFLAGS = `sdl2-config --cflags`
 SDL_LIBS = `sdl2-config --libs` -lSDL2_image
 
-SRC = src/main.c src/map.c src/render.c src/player.c src/camera.c src/entity.c src/behavior.c src/scene.c
+SRC = src/main.c src/map.c src/render.c src/player.c src/camera.c src/entity.c src/behavior.c src/scene.c src/sdl_helpers.c
 BIN = oblique
 
 all:
