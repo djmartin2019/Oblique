@@ -15,7 +15,7 @@ This is a masochistically low-level engine being built from scratch using C and 
 
 The player wears **Obelisk armor**—lightweight, unyielding, and righteous—as they decide whether to restore the old world, burn it down, or build something entirely new.
 
-![Oblique Game Poster](assets/oblique-poster.png)
+![Oblique Game Poster](assets/Oblique-Poster.png)
 
 *For full world backstory and faction details, see the [Game Design Document](#game-world--factions) below.*
 
