@@ -2,6 +2,7 @@
 #include "render/camera.h"
 #include "render/render.h"     //For TILE_WIDTH / TILE_HEIGHT
 #include "ai/behavior.h"
+#include "core/constants.h"
 
 Entity entities[MAX_ENTITIES];
 int entity_count = 0;

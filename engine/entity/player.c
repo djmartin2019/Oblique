@@ -1,8 +1,10 @@
 #include "entity/player.h"
+#include "entity/entity.h"
 #include "render/render.h" // for TILE_WIDTH and TILE_HEIGHT
 #include "render/camera.h"
 #include "core/constants.h"
 #include "core/map.h"
+#include "navigation/grid.h"
 
 #include <SDL2/SDL_image.h>
 
@@ -22,19 +24,26 @@ int init_player(Player* player, SDL_Renderer* renderer) {
     return player->sprite != NULL;
 }
 
-void handle_player_input(Player* player, const Uint8* keystates) {
-    // Movement keys (diagonal-friendly layout)
-    if (keystates[SDL_SCANCODE_UP]) {
-        if (player->y > 0) player->y -= 1;
-    }
-    if (keystates[SDL_SCANCODE_DOWN]) {
-        if (player->y < MAP_HEIGHT - 1) player->y += 1;
-    }
-    if (keystates[SDL_SCANCODE_LEFT]) {
-        if (player->x > 0) player->x -= 1;
-    }
-    if (keystates[SDL_SCANCODE_RIGHT]) {
-        if (player->x < MAP_WIDTH - 1) player->x += 1;
+void handle_player_input(Entity* entity, SDL_Event* event, Camera* cam) {
+    if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) {
+        int mouse_x = event->button.x;
+        int mouse_y = event->button.y;
+
+        int tile_x, tile_y;
+        screen_to_iso(mouse_x, mouse_y, cam, &tile_x, &tile_y);
+
+        // Ensure tile is in bounds
+        if (tile_x >= 0 && tile_x < MAP_WIDTH &&
+            tile_y >= 0 && tile_y < MAP_HEIGHT) {
+
+            if (move_tiles[tile_y][tile_x].valid) {
+                select_tile(tile_x, tile_y);
+
+                // Move the player instantly (you can replace with pathfinding later)
+                entity->x = tile_x;
+                entity->y = tile_y;
+            }
+        }
     }
 }
 

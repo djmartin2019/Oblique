@@ -29,6 +29,8 @@ struct Entity {
     SDL_Texture* sprite_idle;
     SDL_Texture* sprite_wander;
     SDL_Texture* sprite_chase;
+
+    int ap;
 };
 
 extern Entity entities[MAX_ENTITIES];
