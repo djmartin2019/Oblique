@@ -8,16 +8,17 @@ SDL_LIBS = `sdl2-config --libs` -lSDL2_image
 SRC = \
     src/main.c \
     engine/core/map.c \
-    engine/render/render.c \
+    engine/core/scene.c \
     engine/core/input.c \
-    engine/render/camera.c \
     engine/core/constants.c \
+    engine/render/camera.c \
+    engine/render/render.c \
     engine/helpers/sdl_helpers.c \
     engine/entity/entity.c \
     engine/entity/player.c \
     engine/ai/behavior.c \
-    engine/core/scene.c \
-    engine/ui/ui.c
+    engine/ui/ui.c \
+	engine/navigation/grid.c
 
 BIN = oblique
 

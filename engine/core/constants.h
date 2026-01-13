@@ -14,4 +14,8 @@ extern const char* NPC_SPRITE;
 extern const char* DEFAULT_MAP;
 extern const char* GRASS_TILE;
 
+// Tile sizes
+extern const int TILE_WIDTH;
+extern const int TILE_HEIGHT;
+
 #endif

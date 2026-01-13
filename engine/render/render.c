@@ -5,9 +5,6 @@
 
 #include <SDL2/SDL_image.h>
 
-#define TILE_WIDTH 64
-#define TILE_HEIGHT 32
-
 SDL_Texture* tile_textures[1]; // Only 1 tile for now
 
 int load_tile_textures(SDL_Renderer* renderer) {

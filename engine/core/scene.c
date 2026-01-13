@@ -1,10 +1,12 @@
 #include "core/scene.h"
+#include "core/map.h"
+#include "core/constants.h"
+// #include "core/combat.h"
 #include "entity/entity.h"
 #include "render/camera.h"
 #include "render/render.h"
-#include "core/map.h"
 #include "ai/behavior.h"
-#include "core/constants.h"
+#include "navigation/grid.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -33,7 +35,13 @@ void setup_explore_scene(SDL_Renderer* renderer) {
             5, 5,
             player_texture,
             32, 64,
-            -16, -48,
+            // Center horizontally: tile center is at screen_x + TILE_WIDTH/2
+            // Sprite is 32px wide, so offset = TILE_WIDTH/2 - sprite_width/2 = 32 - 16 = 16
+            16,
+            // Position bottom of sprite at tile center: tile center is at screen_y + TILE_HEIGHT/2
+            // Sprite is 64px tall, so offset = TILE_HEIGHT/2 - sprite_height = 16 - 64 = -48
+            // This places the sprite's feet at the tile center
+            -48,
             1,
             player_behavior
     );
@@ -51,7 +59,8 @@ void setup_explore_scene(SDL_Renderer* renderer) {
 }
 
 void setup_combat_scene(SDL_Renderer* renderer) {
-    // TODO
+    // For now, no reloading or new map. Eventually, you could load a special "combat_map"
+
 }
 
 void set_scene(SceneType type, SDL_Renderer* renderer) {
@@ -71,6 +80,7 @@ void update_scene() {
     Entity* player = get_player();
     if (player) {
         update_camera(&camera, player->x, player->y);
+        calculate_move_grid(player->x, player->y, 10);
     }
 
     update_entities();                  // AI + player input
@@ -80,13 +90,24 @@ void update_scene() {
             update_entities();          // Behaviors, movement, etc.
             break;
         case SCENE_COMBAT:
-            // update_combat();     // Turn system
+            // update_combat();            // Turn system
             break;
     }
 }
 
 void render_scene(SDL_Renderer* renderer) {
     calculate_map_offset();
-    draw_map(renderer, &camera);
-    draw_entities(renderer, &camera);
+    draw_map(renderer, &camera);            // 1. draw map tiles
+    draw_move_grid(renderer, &camera);      // 2. draw grid outlines
+    draw_selected_tile(renderer, &camera);  // 3. draw selected tile highlight (under player)
+    draw_entities(renderer, &camera);       // 4. draw player + NPCs (on top)
+                                            // 5. UI (Coming soon)
+
+    if (current_scene == SCENE_COMBAT) {
+        // renderer_combat_ui(renderer);
+    }
+}
+
+Camera* get_camera(void) {
+    return &camera;
 }
