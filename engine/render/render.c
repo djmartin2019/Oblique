@@ -1,6 +1,6 @@
 #include "render/render.h"
-#include "core/map.h"
 #include "render/camera.h"
+#include "core/map.h"
 #include "core/constants.h"
 
 #include <SDL2/SDL_image.h>

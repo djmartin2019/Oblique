@@ -1,21 +1,5 @@
-// -----------------------------------------------------------------------------
-// pathfinding.c
-//
-// Grid-based pathfinding service used by both player and AI.
-// This module is intentionally self-contained:
-//
-// - It knows about the grid (walkability, bounds)
-// - Id does NOT know about entities, rendering, camera, or input
-// - It returns a Path (sequence of tiles) and nothing more
-//
-// The algorithm  implemented here is a straightforward A* over a 2D grid
-// with 4-directional movement and uniform tile cost.
-//
-// Design goals:
-// - Correctness over cleverness
-// - Explicit state (no hidden globals)
-// - Easy to debug and reason about
-// -----------------------------------------------------------------------------
+// Implementation file for pathfinding.h
+// See pathfinding.h for detailed documentation.
 
 #include "navigation/pathfinding.h"
 #include "navigation/grid.h"
@@ -23,80 +7,38 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
+
+// -----------------------------------------------------------------------------
+// Internal Types and Constants
+// -----------------------------------------------------------------------------
 
 #define MAX_PATH_LENGTH 256
 
-// -----------------------------------------------------------------------------
-// Internal node representation
-//
-// Each Node corresponds to a single tile in the map grid.
-// These nodes exist ONLY during pathfinding and are discarded afterwards.
-//
-// Parent pointers are stored as coordinates (x, y) instead of pointers
-// to avoid ownership issues and make reconstruction trivial.
-// -----------------------------------------------------------------------------
-
+// Internal node representation for A* algorithm.
+// Exists only during pathfinding and is discarded afterwards.
 typedef struct {
     int x, y;
-
     int g_cost;     // Cost from start
     int h_cost;     // Heuristic to goal
     int f_cost;     // g + h
-
     int parent_x;
     int parent_y;
-
     int in_open;
     int in_closed;
 } Node;
 
 // -----------------------------------------------------------------------------
-// Manhattan distance heuristic
-//
-// This is appropriate because:
-// - Movement is restricted to 4 directions
-// - All tiles have uniform cost
-//
-// If diagonal movement or terrain costs are added later,
-// this is one of the first functions that would need adjustment.
+// Internal Helpers
 // -----------------------------------------------------------------------------
 
 static int heuristic(int x1, int y1, int x2, int y2) {
     return abs(x1 - x2) + abs(y1 - y2);
 }
 
-// -----------------------------------------------------------------------------
-// Convert (x, y) tile coordinates into a pointer within the flat node array.
-//
-// Nodes are stored in a single contiguous block for simplicity
-// Access pattern: row-major order (y * width + x).
-// -----------------------------------------------------------------------------
-
 static Node* get_node(Node* nodes, int x, int y) {
     return &nodes[y * MAP_WIDTH + x];
 }
-
-// -----------------------------------------------------------------------------
-// Free a Path returned by find_path.
-//
-// Ownership rule:
-// - pathfinding allocates the Path
-// - the caller is responsible for freeing it when done
-// -----------------------------------------------------------------------------
-
-void free_path(Path* path) {
-    if (!path) return;
-    free(path->nodes);
-    free(path);
-}
-
-// -----------------------------------------------------------------------------
-// Find the open node with the lowest f_cost.
-//
-// This is an O(n) scan over the grid, which is acceptable for now.
-// If performance ever becomes an issue, this is where a priority queue
-// or binary heap would be introduced.
-// -----------------------------------------------------------------------------
 
 static Node* find_lowest_f(Node* nodes) {
     Node* best = NULL;
@@ -115,20 +57,7 @@ static Node* find_lowest_f(Node* nodes) {
     return best;
 }
 
-// -----------------------------------------------------------------------------
-// Reconstruct the final path once the goal node is reached.
-//
-// Walks backward from the goal node to the start using parent pointers,
-// then reverses the result so the path is ordered start -> goal.
-//
-// Notes:
-// - The starting tile is NOT included in the path
-// - The goal tile IS included
-// - Path length is capped by MAX_PATH_LENGTH
-// -----------------------------------------------------------------------------
-
 static Path* reconstruct_path(Node* nodes, Node* goal, int start_x, int start_y) {
-
     Path* path = malloc(sizeof(Path));
     if (!path) return NULL;
 
@@ -138,7 +67,7 @@ static Path* reconstruct_path(Node* nodes, Node* goal, int start_x, int start_y)
 
     Node* current = goal;
 
-    // Walk backwards through parent links (start node has parent_x == -1, so we stop before adding it)
+    // Walk backwards through parent links
     while (current->parent_x != -1) {
         path->nodes[path->length++] = (PathNode) {
             current->x,
@@ -148,8 +77,7 @@ static Path* reconstruct_path(Node* nodes, Node* goal, int start_x, int start_y)
         current = get_node(nodes, current->parent_x, current->parent_y);
     }
 
-    // Always add the start node at the end (before reversing)
-    // This ensures the path includes the starting position
+    // Always add the start node (before reversing)
     path->nodes[path->length++] = (PathNode) { start_x, start_y };
 
     // Reverse path so it runs from start -> goal
@@ -163,23 +91,18 @@ static Path* reconstruct_path(Node* nodes, Node* goal, int start_x, int start_y)
 }
 
 // -----------------------------------------------------------------------------
-// Public API: find_path
-//
-// Attempts to find a path from (start_x, start_y) to (goal_x, goal_y).
-//
-// Returns:
-// - A newly allocated Path on success
-// - NULL if no valid path exists
-//
-// This function performs NO movement.
-// It only plans a route.
+// Public API Implementation
 // -----------------------------------------------------------------------------
 
-Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
+void free_path(Path* path) {
+    if (!path) return;
+    free(path->nodes);
+    free(path);
+}
 
-    // Early out if start == goal (already there)
+Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
+    // Early out if start == goal
     if (start_x == goal_x && start_y == goal_y) {
-        // Return a path with just the start node (will be cleaned up immediately)
         Path* path = malloc(sizeof(Path));
         if (!path) return NULL;
         path->nodes = malloc(sizeof(PathNode));
@@ -226,7 +149,7 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
     // Main A* loop
     while (1) {
         Node* current = find_lowest_f(nodes);
-        if (!current) break; // No more reachable nodes
+        if (!current) break;
 
         // Goal reached: reconstruct and return path
         if (current->x == goal_x && current->y == goal_y) {
@@ -238,7 +161,7 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
         current->in_open = 0;
         current->in_closed = 1;
 
-        // Cardinal movement only (no diagonals)
+        // Explore 4-directional neighbors
         static int dirs[4][2] = {
             {  1,  0 },
             { -1,  0 },
@@ -258,7 +181,6 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
 
             int tentative_g = current->g_cost + 1;
 
-            // If this path to neighbor is better, record it
             if (!neighbor->in_open || tentative_g < neighbor->g_cost) {
                 neighbor->parent_x = current->x;
                 neighbor->parent_y = current->y;

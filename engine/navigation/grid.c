@@ -1,12 +1,23 @@
+// Implementation file for grid.h
+// See grid.h for detailed documentation.
+
 #include "navigation/grid.h"
 #include "core/map.h"
 #include "core/constants.h"
 
-#include <string.h>     // for memset
+#include <string.h>
 #include <SDL2/SDL.h>
 
+// -----------------------------------------------------------------------------
+// Global State
+// -----------------------------------------------------------------------------
 
 HighlightTile move_tiles[MAP_WIDTH][MAP_HEIGHT];
+GridSelection selected_tile = { -1, -1, 0 };
+
+// -----------------------------------------------------------------------------
+// Internal Types and Constants
+// -----------------------------------------------------------------------------
 
 typedef struct {
     int x, y, cost;
@@ -14,7 +25,9 @@ typedef struct {
 
 #define MAX_QUEUE 2048
 
-GridSelection selected_tile = { -1, -1, 0 };
+// -----------------------------------------------------------------------------
+// Movement Grid Calculation
+// -----------------------------------------------------------------------------
 
 void clear_move_grid(void) {
     memset(move_tiles, 0, sizeof(move_tiles));
@@ -31,23 +44,27 @@ void calculate_move_grid(int start_x, int start_y, int max_cost) {
     while (head < tail) {
         Node current = queue[head++];
 
-        if (current.x < 0 || current.x >= MAP_WIDTH || current.y < 0 || current.y >= MAP_HEIGHT)
+        if (current.x < 0 || current.x >= MAP_WIDTH || 
+            current.y < 0 || current.y >= MAP_HEIGHT) {
             continue;
+        }
 
         HighlightTile* tile = &move_tiles[current.y][current.x];
 
-        if (tile->valid && current.cost >= tile->ap_cost)
+        if (tile->valid && current.cost >= tile->ap_cost) {
             continue;
+        }
 
-        if (current.cost > max_cost)
+        if (current.cost > max_cost) {
             continue;
+        }
 
         tile->x = current.x;
         tile->y = current.y;
         tile->ap_cost = current.cost;
         tile->valid = 1;
 
-        // Add neighboring tiles
+        // Explore 4-directional neighbors
         queue[tail++] = (Node){current.x + 1, current.y, current.cost + 1};
         queue[tail++] = (Node){current.x - 1, current.y, current.cost + 1};
         queue[tail++] = (Node){current.x, current.y + 1, current.cost + 1};
@@ -55,11 +72,19 @@ void calculate_move_grid(int start_x, int start_y, int max_cost) {
     }
 }
 
+// -----------------------------------------------------------------------------
+// Tile Selection
+// -----------------------------------------------------------------------------
+
 void select_tile(int tile_x, int tile_y) {
     selected_tile.x = tile_x;
     selected_tile.y = tile_y;
     selected_tile.selected = 1;
 }
+
+// -----------------------------------------------------------------------------
+// Rendering Helpers
+// -----------------------------------------------------------------------------
 
 static void draw_iso_tile_outline(SDL_Renderer* renderer, int screen_x, int screen_y, SDL_Color color) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -69,7 +94,7 @@ static void draw_iso_tile_outline(SDL_Renderer* renderer, int screen_x, int scre
         { screen_x + TILE_WIDTH,     screen_y + TILE_HEIGHT / 2 },  // Right
         { screen_x + TILE_WIDTH / 2, screen_y + TILE_HEIGHT },      // Bottom
         { screen_x,                  screen_y + TILE_HEIGHT / 2 },  // Left
-        { screen_x + TILE_WIDTH / 2, screen_y }                     // Back to top
+        { screen_x + TILE_WIDTH / 2, screen_y }                     // Close polygon
     };
 
     SDL_RenderDrawLines(renderer, diamond, 5);
@@ -82,53 +107,45 @@ static void fill_iso_tile(SDL_Renderer* renderer, int screen_x, int screen_y, SD
     int cy = screen_y + TILE_HEIGHT / 2;
 
     for (int dy = -TILE_HEIGHT/2; dy <= TILE_HEIGHT/2; dy++) {
+        // Calculate scanline width based on distance from center (diamond shape)
         int span = (TILE_WIDTH/2) - abs(dy * (TILE_WIDTH / TILE_HEIGHT));
-        SDL_RenderDrawLine(renderer,
-            cx - span,
-            cy + dy,
-            cx + span,
-            cy + dy
-        );
+        SDL_RenderDrawLine(renderer, cx - span, cy + dy, cx + span, cy + dy);
     }
 }
+
+// -----------------------------------------------------------------------------
+// Grid Rendering
+// -----------------------------------------------------------------------------
 
 void draw_move_grid(SDL_Renderer* renderer, Camera* cam) {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for (int x = 0; x < MAP_WIDTH; x++) {
-
-            // Convert tile coordinates to isometric screen coords
             int screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
             int screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
 
-           // White grid by default
-           SDL_Color white = {255, 255, 255, 80};
-           draw_iso_tile_outline(renderer, screen_x, screen_y, white);
+            SDL_Color white = {255, 255, 255, 80};
+            draw_iso_tile_outline(renderer, screen_x, screen_y, white);
 
-           // Red fill if selected
-           if (selected_tile.selected && selected_tile.x == x && selected_tile.y == y) {
-               SDL_Color red = {255, 0, 0, 120};
-               fill_iso_tile(renderer, screen_x, screen_y, red);
-           }
+            if (selected_tile.selected && selected_tile.x == x && selected_tile.y == y) {
+                SDL_Color red = {255, 0, 0, 120};
+                fill_iso_tile(renderer, screen_x, screen_y, red);
+            }
         }
     }
 }
 
-// Converts screen coordinates to isometric tile coordinates
-// Accounts for camera offset and map offset
-// Reverse of: screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x
+// -----------------------------------------------------------------------------
+// Coordinate Conversion
+// -----------------------------------------------------------------------------
+
 void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* tile_y) {
-    // Reverse the camera and map offset to get world coordinates
-    // screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x
-    // So: (x - y) * (TILE_WIDTH / 2) = screen_x + cam->x - map_offset_x
+    // Reverse camera and map offset to get world coordinates
     float world_x = (float)(screen_x + cam->x - map_offset_x);
-    
-    // screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y
-    // So: (x + y) * (TILE_HEIGHT / 2) = screen_y + cam->y - map_offset_y
     float world_y = (float)(screen_y + cam->y - map_offset_y);
 
-    // Now reverse the isometric projection using floating point for accuracy:
-    // world_x = (x - y) * (TILE_WIDTH / 2)  =>  x - y = world_x / (TILE_WIDTH / 2)
-    // world_y = (x + y) * (TILE_HEIGHT / 2) =>  x + y = world_y / (TILE_HEIGHT / 2)
+    // Reverse isometric projection
+    // x - y = world_x / (TILE_WIDTH / 2)
+    // x + y = world_y / (TILE_HEIGHT / 2)
     // Solving: x = ((x+y) + (x-y)) / 2, y = ((x+y) - (x-y)) / 2
     float half_tile_w = (float)(TILE_WIDTH / 2);
     float half_tile_h = (float)(TILE_HEIGHT / 2);
@@ -136,19 +153,21 @@ void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* ti
     float x_minus_y = world_x / half_tile_w;
     float x_plus_y = world_y / half_tile_h;
     
-    *tile_x = (int)((x_plus_y + x_minus_y) / 2.0f + 0.5f);  // Round to nearest
-    *tile_y = (int)((x_plus_y - x_minus_y) / 2.0f + 0.5f);  // Round to nearest
+    *tile_x = (int)((x_plus_y + x_minus_y) / 2.0f + 0.5f);
+    *tile_y = (int)((x_plus_y - x_minus_y) / 2.0f + 0.5f);
 }
 
+// -----------------------------------------------------------------------------
+// Utility Functions
+// -----------------------------------------------------------------------------
 
 int is_tile_in_bounds(int x, int y) {
-    return (x >= 0 && x < MAP_WIDTH &&
-            y >= 0 && y < MAP_HEIGHT);
+    return (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT);
 }
 
 int is_tile_walkable(int x, int y) {
-    if (!is_tile_in_bounds(x, y))
+    if (!is_tile_in_bounds(x, y)) {
         return 0;
-
+    }
     return map_is_walkable(x, y);
 }

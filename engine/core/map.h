@@ -6,6 +6,8 @@
 
 extern int tile_map[MAP_HEIGHT][MAP_WIDTH];
 
+int map_is_walkable(int x, int y);
+
 int load_map(const char* filename);
 
 #endif

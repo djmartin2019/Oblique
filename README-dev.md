@@ -1,19 +1,18 @@
-# Oblique Engine - Technical Documentation
+# Oblique Engine - Camera System Overview
 
-This document explains the technical systems in the Oblique Engine, in plain English, for Future David (who has likely forgotten how anything works).
+This document explains how the isometric camera system in the Oblique Engine works, in plain English, for Future David (who has likely forgotten how anything works).
 
 ---
 
 ## 🤖 Core Concepts
 
-The engine simulates an old-school isometric view, like classic tactics RPGs. The main systems involved:
+The engine simulates an old-school isometric view, like Fallout 1/2 or tactics RPGs. The main systems involved:
 
-- **Tile grid** — The game world is a 2D grid of tiles.
-- **Isometric projection** — Grid coordinates are converted to diamond-shaped screen positions.
-- **Camera** — Moves around the world to keep the player centered.
-- **Map offset** — Centers the map when the game starts.
-- **Entity system** — Tracks and renders all game objects (player, NPCs, props)
-- **Grid system** — Overlay grid with click-to-select and tile highlighting
+* **Tile grid** — The game world is a 2D grid of tiles.
+* **Isometric projection** — Grid coordinates are converted to diamond-shaped screen positions.
+* **Camera** — Moves around the world to keep the player centered.
+* **Map offset** — Centers the map when the game starts.
+* **Entity system** — Tracks and renders all game objects (player, NPCs, props)
 
 ---
 
@@ -50,7 +49,7 @@ map_offset_x = (WINDOW_WIDTH / 2) - map_center_x;
 map_offset_y = (WINDOW_HEIGHT / 2) - map_center_y;
 ```
 
-This ensures the _middle tile_ lands dead center of the window, not the top-left.
+This ensures the *middle tile* lands dead center of the window, not the top-left.
 
 ---
 
@@ -66,7 +65,7 @@ cam->x = iso_x - screen_center_x;
 cam->y = iso_y - screen_center_y;
 ```
 
-The camera doesn't move the player. It moves the _world_ to make it look like the player is staying still.
+The camera doesn’t move the player. It moves the *world* to make it look like the player is staying still.
 
 ---
 
@@ -83,189 +82,268 @@ Each tile is drawn in order, using its `tile_id` to grab the texture.
 
 ---
 
-## 🎯 Grid System
+## 🧍‍♂️ `draw_player()`
 
-The grid system provides visual feedback for tile selection and movement planning.
-
-### `draw_move_grid()`
-
-Draws the grid overlay with white outlines for all tiles.
+Draws the player at their tile, centered visually using an offset.
 
 ```c
-void draw_move_grid(SDL_Renderer* renderer, Camera* cam) {
-    for (int y = 0; y < MAP_HEIGHT; y++) {
-        for (int x = 0; x < MAP_WIDTH; x++) {
-            int screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
-            int screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
+int screen_x = (player->x - player->y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
+int screen_y = (player->x + player->y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
 
-            SDL_Color white = {255, 255, 255, 80};
-            draw_iso_tile_outline(renderer, screen_x, screen_y, white);
-        }
-    }
-}
+SDL_Rect dest = {
+    screen_x - 16,      // 32px wide sprite
+    screen_y - 48,      // 64px tall sprite, feet on tile
+    32,
+    64
+};
 ```
-
-### `draw_selected_tile()`
-
-Draws a red highlight on the currently selected tile. Called after entities so the player appears on top.
-
-```c
-void draw_selected_tile(SDL_Renderer* renderer, Camera* cam) {
-    if (selected_tile.selected) {
-        int x = selected_tile.x;
-        int y = selected_tile.y;
-
-        int screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
-        int screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
-
-        SDL_Color red = {255, 0, 0, 120};
-        fill_iso_tile(renderer, screen_x, screen_y, red);
-    }
-}
-```
-
-### `screen_to_iso()`
-
-Converts screen coordinates (mouse click position) to tile coordinates, accounting for camera offset.
-
-```c
-void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* tile_y) {
-    // Add camera offset back to get world coordinates
-    int world_x = screen_x + cam->x - map_offset_x;
-    int world_y = screen_y + cam->y - map_offset_y;
-
-    // Reverse the isometric projection:
-    // world_x = (x - y) * (TILE_WIDTH / 2)
-    // world_y = (x + y) * (TILE_HEIGHT / 2)
-    // Solving for x and y:
-    *tile_x = (world_x / (TILE_WIDTH / 2) + world_y / (TILE_HEIGHT / 2)) / 2;
-    *tile_y = (world_y / (TILE_HEIGHT / 2) - world_x / (TILE_WIDTH / 2)) / 2;
-}
-```
-
-**Important:** The camera offset must be added back before converting, otherwise clicks will be misaligned when the camera has moved.
 
 ---
 
-## 🧍‍♂️ Entity System
+## 👥 Entity System Overview
 
-### `Entity` Struct
+### `Entity` Struct:
 
 ```c
 typedef struct {
-    int x, y;               // Tile position
-    SDL_Texture* sprite;    // Sprite texture
-    int width, height;      // Sprite dimensions
-    int offset_x, offset_y; // Pixel offsets for alignment
-    int is_player;          // Flag to identify the player
-    BehaviorFunc behavior;  // AI behavior function pointer
-    AIState state;          // Current AI state
-    int ap;                 // Action points (for combat)
+    int x, y;               // Logical tile position
+    float render_x, render_y; // Visual position (for interpolation)
+    
+    // Movement interpolation
+    float move_progress;    // 0.0 -> 1.0
+    int moving;
+    int from_x, from_y;    // Starting tile for current movement
+    int to_x, to_y;         // Destination tile for current movement
+    
+    // Pathfinding
+    Path* path;             // Current path (NULL if idle)
+    int move_cooldown;      // Ticks until next tile move
+    int move_delay;         // How many ticks between moves
+    
+    SDL_Texture* sprite;
+    int width, height;
+    int offset_x, offset_y; // Visual offsets for sprite alignment
+    int is_player;
+    BehaviorFunc behavior;  // AI behavior function
 } Entity;
 ```
 
-### Drawing Entities
+### Purpose:
+
+* Consolidates players, NPCs, and props into a single system
+* Supports pathfinding and smooth interpolation-based movement
+* Allows iteration, update, and rendering in one place
+* AI behaviors use the same movement system as the player
+
+### Drawing Entities:
 
 ```c
 void draw_entities(SDL_Renderer* renderer, Camera* cam) {
     for (int i = 0; i < entity_count; i++) {
         Entity* e = &entities[i];
-
-        int screen_x = (e->x - e->y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
-        int screen_y = (e->x + e->y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
-
-        SDL_Rect dest = {
-            screen_x + e->offset_x,
-            screen_y + e->offset_y,
-            e->width,
-            e->height
-        };
-
+        
+        // Use interpolated render position for smooth movement
+        float rx = e->render_x;
+        float ry = e->render_y;
+        
+        // Same formula as tiles/grid for perfect alignment
+        int screen_x = (rx - ry) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
+        int screen_y = (rx + ry) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
+        
+        // Apply sprite offsets to align feet with tile center
+        screen_x += e->offset_x;
+        screen_y += e->offset_y;
+        
+        SDL_Rect dest = { screen_x, screen_y, e->width, e->height };
         SDL_RenderCopy(renderer, e->sprite, NULL, &dest);
     }
 }
 ```
 
-### Player Positioning
+---
 
-The player sprite is positioned so its bottom (feet) aligns with the tile center:
+## 🧭 Pathfinding System
+
+### A* Algorithm
+
+The engine uses a grid-based A* pathfinding algorithm for navigation:
 
 ```c
-// Horizontal: center the sprite on the tile
-offset_x = TILE_WIDTH / 2 - sprite_width / 2 = 32 - 16 = 16
-
-// Vertical: place sprite bottom at tile center
-offset_y = TILE_HEIGHT / 2 - sprite_height = 16 - 64 = -48
+Path* find_path(int start_x, int start_y, int goal_x, int goal_y);
+void free_path(Path* path);
 ```
 
-This ensures the player appears to be standing on the tile, not floating above or below it.
+**Features:**
+- 4-directional movement (cardinal directions only)
+- Uniform tile cost (1 per tile)
+- Walkability checks via `is_tile_walkable()`
+- Path includes start node for proper movement handling
+
+**Path Structure:**
+```c
+typedef struct {
+    PathNode* nodes;  // Array of tile coordinates
+    int length;       // Number of nodes in path
+    int current;      // Current position in path
+} Path;
+```
+
+### Walkability
+
+Tiles are walkable if `tile_map[y][x] == 0` (convention: 0 = walkable, non-zero = blocked).
 
 ---
 
-## 🎮 Input Handling
+## 🚶 Movement System
 
-### Mouse Click to Tile Selection
+### Interpolation-Based Movement
 
-Mouse clicks are handled in `handle_player_input()`:
+Entities move tile-by-tile with smooth interpolation between tiles:
+
+1. **Path Assignment**: When a path is assigned, `path->current = 0`
+2. **Movement Start**: Entity stores `from_x/from_y` (current tile) and `to_x/to_y` (next tile)
+3. **Interpolation**: Each frame, `move_progress` increases (0.0 → 1.0)
+4. **Visual Position**: `render_x/render_y` interpolate between `from` and `to` positions
+5. **Tile Arrival**: When `move_progress >= 1.0`, logical position updates and path advances
+
+**Movement Update:**
+```c
+void update_entity_movement(Entity* e) {
+    if (!e || !e->path) return;
+    
+    // Skip first node if it matches current position
+    if (e->path->current < e->path->length) {
+        PathNode first = e->path->nodes[e->path->current];
+        if (first.x == e->x && first.y == e->y) {
+            e->path->current++;
+        }
+    }
+    
+    // If moving, interpolate
+    if (e->moving) {
+        e->move_progress += MOVE_PROGRESS; // 0.2 per frame
+        if (e->move_progress >= 1.0f) {
+            // Arrived at tile, update logical position
+            e->x = e->to_x;
+            e->y = e->to_y;
+            e->render_x = (float)e->x;
+            e->render_y = (float)e->y;
+            e->path->current++;
+            e->moving = 0;
+        } else {
+            // Interpolate visual position
+            float t = e->move_progress;
+            e->render_x = e->from_x + (e->to_x - e->from_x) * t;
+            e->render_y = e->from_y + (e->to_y - e->from_y) * t;
+        }
+        return;
+    }
+    
+    // Start next movement if cooldown expired
+    if (e->move_cooldown > 0) {
+        e->move_cooldown--;
+        return;
+    }
+    
+    // Begin movement to next tile in path
+    PathNode next = e->path->nodes[e->path->current];
+    e->from_x = (float)e->x;
+    e->from_y = (float)e->y;
+    e->to_x = next.x;
+    e->to_y = next.y;
+    e->moving = 1;
+    e->move_progress = 0.0f;
+}
+```
+
+**Movement Speed:**
+- `MOVE_PROGRESS = 0.2f` (takes ~5 frames per tile at 100ms delay = 500ms per tile)
+- `move_delay` controls cooldown between tiles (default: 6 ticks for player, 10 for NPCs)
+
+---
+
+## 🤖 AI Behaviors with Pathfinding
+
+NPCs use the same pathfinding system as the player:
+
+### Wander Behavior
 
 ```c
-void handle_player_input(Entity* entity, SDL_Event* event, Camera* cam) {
-    if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) {
-        int mouse_x = event->button.x;
-        int mouse_y = event->button.y;
-
-        int tile_x, tile_y;
-        screen_to_iso(mouse_x, mouse_y, cam, &tile_x, &tile_y);
-
-        // Ensure tile is in bounds and valid for movement
-        if (tile_x >= 0 && tile_x < MAP_WIDTH &&
-            tile_y >= 0 && tile_y < MAP_HEIGHT) {
-
-            if (move_tiles[tile_y][tile_x].valid) {
-                select_tile(tile_x, tile_y);
-                entity->x = tile_x;
-                entity->y = tile_y;
-            }
+void wander_behavior(Entity* self) {
+    if (self->path) return; // Already moving
+    
+    if (rand() % 100 < 2) { // 2% chance per frame
+        int dir = rand() % 4;
+        int target_x = self->x + (dir == 0 ? 1 : dir == 1 ? -1 : 0);
+        int target_y = self->y + (dir == 2 ? 1 : dir == 3 ? -1 : 0);
+        
+        Path* path = find_path(self->x, self->y, target_x, target_y);
+        if (path && path->length > 0) {
+            self->path = path;
+            self->path->current = 0;
         }
     }
 }
 ```
 
-**Important:** Events must be processed inside the `SDL_PollEvent` loop, not after it.
-
----
-
-## 🎨 Rendering Order
-
-The rendering order is critical for proper visual layering:
+### Chase Behavior
 
 ```c
-void render_scene(SDL_Renderer* renderer) {
-    calculate_map_offset();
-    draw_map(renderer, &camera);            // 1. Draw map tiles (bottom layer)
-    draw_move_grid(renderer, &camera);      // 2. Draw grid outlines
-    draw_selected_tile(renderer, &camera);  // 3. Draw selected tile highlight
-    draw_entities(renderer, &camera);       // 4. Draw player + NPCs (top layer)
+void chase_behavior(Entity* self) {
+    Entity* player = get_player();
+    if (!player || (self->path && self->path->current < self->path->length)) {
+        return; // No player or still following path
+    }
+    
+    if (++chase_timer % 10 != 0) return; // Recalculate every 10 ticks
+    
+    Path* path = find_path(self->x, self->y, player->x, player->y);
+    if (path && path->length > 0) {
+        if (self->path) free_path(self->path);
+        self->path = path;
+        self->path->current = 0;
+    }
 }
 ```
 
-This ensures:
+---
 
-- Map tiles are the base layer
-- Grid outlines are visible but don't obscure entities
-- Selected tile highlight appears under the player
-- Entities (player, NPCs) appear on top
+## 🎨 Rendering System
+
+### Entity Alignment
+
+Entities are rendered using the same coordinate formula as tiles/grid to ensure perfect alignment:
+
+```c
+// Calculate tile position in isometric space
+int screen_x = (rx - ry) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
+int screen_y = (rx + ry) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
+
+// Apply offsets to align sprite feet with tile center
+screen_x += e->offset_x;  // Typically 16 (centers 32px sprite on 64px tile)
+screen_y += e->offset_y; // Typically -48 (aligns 64px sprite feet with tile center)
+```
+
+**Offset Calculation:**
+- `offset_x = TILE_WIDTH/2 - sprite_width/2` (centers horizontally)
+- `offset_y = TILE_HEIGHT/2 - sprite_height` (aligns feet with tile center)
+
+For a 32x64 sprite on a 64x32 tile:
+- `offset_x = 32 - 16 = 16`
+- `offset_y = 16 - 64 = -48`
 
 ---
 
 ## 💡 Debug Tips
 
-- **Player floats weirdly:** Check sprite offset values. Feet should be at tile center.
-- **Player and tile locations don't line up:** Check `map_offset` calculation.
-- **Player is centered but world drifts:** Check camera math in `update_camera()`.
-- **Mouse clicks don't align with tiles:** Ensure `screen_to_iso()` accounts for camera offset.
-- **Selected tile appears over player:** Check rendering order in `render_scene()`.
-- **Everything is broken:** Stop hardcoding magic numbers everywhere.
+* If the player floats weirdly, your sprite offset is probably wrong.
+* If the player and tile locations don't line up, your map_offset is wrong.
+* If the player is centered but the world drifts, your camera math is cursed.
+* If entities don't move, check that `path` is assigned and `update_entity_movement()` is called.
+* If pathfinding returns NULL, verify tiles are walkable (0 = walkable, non-zero = blocked).
+* If movement is jittery, check `MOVE_PROGRESS` value and frame timing.
+* If entities render off-grid, verify `render_x/render_y` use same formula as tiles.
+* If everything is broken, stop hardcoding +400 and +50 everywhere.
 
 ---
 
@@ -273,61 +351,18 @@ This ensures:
 
 > World + offset - camera = screen position
 
-The camera doesn't move the player. The world moves _around_ the player.
+The camera doesn't move the player. The world moves *around* the player.
 
-When converting screen coordinates back to tile coordinates, always add the camera offset back first.
+**Movement Flow:**
+1. Click tile → `find_path()` → assign to `entity->path`
+2. `update_entity_movement()` processes path tile-by-tile
+3. `render_x/render_y` interpolate between tiles for smooth visual movement
+4. Logical `x/y` update when tile is reached
 
-Yes, Unity does all this for you. But now _you_ are Unity. Sleep well.
+**Key Concepts:**
+- `x, y` = logical tile position (integer)
+- `render_x, render_y` = visual position (float, for interpolation)
+- Path includes start node, so skip it if it matches current position
+- All entities (player + NPCs) use the same movement system
 
----
-
-## 📁 File Organization
-
-### Navigation System (`engine/navigation/`)
-
-- `grid.c/h` - Grid overlay rendering, tile selection, coordinate conversion
-  - `draw_move_grid()` - Draws grid outlines
-  - `draw_selected_tile()` - Draws selected tile highlight
-  - `screen_to_iso()` - Converts screen coords to tile coords
-  - `select_tile()` - Sets the currently selected tile
-  - `calculate_move_grid()` - Calculates valid movement tiles from player position
-
-### Entity System (`engine/entity/`)
-
-- `entity.c/h` - Entity management and rendering
-- `player.c/h` - Player-specific input handling and logic
-
-### Core Systems (`engine/core/`)
-
-- `scene.c/h` - Scene management and rendering order
-- `camera.c/h` - Camera positioning and map offset
-- `map.c/h` - Map loading and tile data
-
----
-
-## 🔧 Recent Changes
-
-### Grid System Implementation
-
-- Added `navigation/grid.c/h` for grid overlay and tile selection
-- Implemented `screen_to_iso()` with proper camera offset handling
-- Added `draw_selected_tile()` for visual feedback
-- Fixed rendering order so player appears above selected tile highlight
-- Updated player positioning offsets to align feet with tile center
-
-### Input System Updates
-
-- Mouse click handling moved inside `SDL_PollEvent` loop
-- `handle_player_input()` updated to work with Entity system
-- Added camera parameter to coordinate conversion functions
-
----
-
-## 🚧 Future Improvements
-
-- Depth sorting for entities (render back-to-front based on Y position)
-- Pathfinding system for movement
-- Collision detection integration
-- Combat system with action points
-- Save/load system
-- Scripting system for behaviors
+Yes, Unity does all this for you. But now *you* are Unity. Sleep well.

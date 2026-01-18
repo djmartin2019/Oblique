@@ -1,13 +1,28 @@
+// Implementation file for entity.h
+// See entity.h for detailed documentation.
+
 #include "entity/entity.h"
 #include "render/camera.h"
-#include "render/render.h"     //For TILE_WIDTH / TILE_HEIGHT
+#include "render/render.h"
 #include "ai/behavior.h"
 #include "core/constants.h"
 
-#define MOVE_PROGRESS 0.2f  // Movement speed (0.2 means ~5 frames per tile at 100ms delay = 500ms per tile)
+// -----------------------------------------------------------------------------
+// Constants
+// -----------------------------------------------------------------------------
+
+#define MOVE_PROGRESS 0.2f
+
+// -----------------------------------------------------------------------------
+// Global State
+// -----------------------------------------------------------------------------
 
 Entity entities[MAX_ENTITIES];
 int entity_count = 0;
+
+// -----------------------------------------------------------------------------
+// Entity Management
+// -----------------------------------------------------------------------------
 
 void init_entities() {
     entity_count = 0;
@@ -19,7 +34,7 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     Entity* e = &entities[entity_count++];
     e->x = x;
     e->y = y;
-    e->render_x = (float)x;  // Initialize render position
+    e->render_x = (float)x;
     e->render_y = (float)y;
     e->sprite = sprite;
     e->width = width;
@@ -29,7 +44,6 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     e->is_player = is_player;
     e->behavior = behavior;
     
-    // Initialize movement fields
     e->move_progress = 0.0f;
     e->moving = 0;
     e->from_x = x;
@@ -38,26 +52,25 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     e->to_y = y;
     e->path = NULL;
     e->move_cooldown = 0;
-    e->move_delay = 6;  // Default move delay
+    e->move_delay = 6;
 
-    return entity_count - 1; // Return index
+    return entity_count - 1;
 }
+
+// -----------------------------------------------------------------------------
+// Entity Rendering
+// -----------------------------------------------------------------------------
 
 void draw_entities(SDL_Renderer* renderer, Camera* cam) {
     for (int i = 0; i < entity_count; i++) {
         Entity* e = &entities[i];
 
-        // Use interpolated render position
         float rx = e->render_x;
         float ry = e->render_y;
 
-        // Calculate screen position using the same formula as tiles and grid
-        // This ensures entities align perfectly with the grid
         int screen_x = (rx - ry) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
         int screen_y = (rx + ry) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
         
-        // Apply sprite offsets to position the sprite correctly on the tile
-        // offset_x and offset_y are used to align the sprite's feet with the tile center
         screen_x += e->offset_x;
         screen_y += e->offset_y;
 
@@ -68,53 +81,47 @@ void draw_entities(SDL_Renderer* renderer, Camera* cam) {
             e->height
         };
 
-        // Set sprite color tint based on AI state
         if (!e->is_player) {
             switch (e->state) {
                 case STATE_IDLE:
-                    SDL_SetTextureColorMod(e->sprite, 64, 64, 64);      // gray
+                    SDL_SetTextureColorMod(e->sprite, 64, 64, 64);
                     break;
                 case STATE_WANDER:
-                    SDL_SetTextureColorMod(e->sprite, 0, 255, 0);       // green
+                    SDL_SetTextureColorMod(e->sprite, 0, 255, 0);
                     break;
                 case STATE_CHASE:
-                    SDL_SetTextureColorMod(e->sprite, 255, 0, 0);       // red
+                    SDL_SetTextureColorMod(e->sprite, 255, 0, 0);
                     break;
                 default:
-                    SDL_SetTextureColorMod(e->sprite, 255, 255, 255);   // default white
+                    SDL_SetTextureColorMod(e->sprite, 255, 255, 255);
                     break;
             }
         } else {
-            SDL_SetTextureColorMod(e->sprite, 255, 255, 255);           // Player always render full color
+            SDL_SetTextureColorMod(e->sprite, 255, 255, 255);
         }
 
         SDL_RenderCopy(renderer, e->sprite, NULL, &dest);
     }
 }
 
+// -----------------------------------------------------------------------------
+// Entity Updates
+// -----------------------------------------------------------------------------
+
 void update_entities() {
     for (int i = 0; i < entity_count; i++) {
         Entity* e = &entities[i];
 
-        // Let the AI update it's brain before acting
         if (!e->is_player) {
             npc_brain(e);
         }
 
-        // Then run its behavior
         if (e->behavior) {
             e->behavior(e);
         }
 
         update_entity_movement(e);
     }
-}
-
-Entity* get_player() {
-    for (int i = 0; i < entity_count; i++) {
-        if (entities[i].is_player) return &entities[i];
-    }
-    return NULL;
 }
 
 void update_entity_movement(Entity* e) {
@@ -124,16 +131,15 @@ void update_entity_movement(Entity* e) {
         return;
     }
 
-    // Skip the first node if it's the current position (path includes start node)
+    // Skip first node if it matches current position
     if (e->path->current < e->path->length) {
         PathNode first = e->path->nodes[e->path->current];
         if (first.x == e->x && first.y == e->y) {
-            printf("Skipping first node (%d,%d) - matches current position\n", first.x, first.y);
             e->path->current++;
         }
     }
 
-    // If we've reached the end of the path, clean up
+    // Path complete
     if (e->path->current >= e->path->length) {
         free_path(e->path);
         e->path = NULL;
@@ -141,30 +147,20 @@ void update_entity_movement(Entity* e) {
         return;
     }
 
-    // If we're currently interpolating between tiles, continue moving
+    // Interpolating between tiles
     if (e->moving) {
-        // Advance interpolation (tune this value for speed)
         e->move_progress += MOVE_PROGRESS;
 
         if (e->move_progress >= 1.0f) {
-            // Snap to destination tile logically
             e->x = e->to_x;
             e->y = e->to_y;
-
-            // Finish movement
             e->render_x = (float)e->x;
             e->render_y = (float)e->y;
-
             e->move_progress = 0.0f;
             e->moving = 0;
-
-            // Advance path
             e->path->current++;
-
-            // Apply cooldown before next tile
             e->move_cooldown = e->move_delay;
         } else {
-            // Interpolate render position only
             float t = e->move_progress;
             e->render_x = e->from_x + (e->to_x - e->from_x) * t;
             e->render_y = e->from_y + (e->to_y - e->from_y) * t;
@@ -173,26 +169,30 @@ void update_entity_movement(Entity* e) {
         return;
     }
 
-    // Not moving yet, respect cooldown
+    // Cooldown check
     if (e->move_cooldown > 0) {
         e->move_cooldown--;
         return;
     }
 
-    // Move to next tile in the path
+    // Start movement to next tile
     PathNode next = e->path->nodes[e->path->current];
-    printf("Starting movement: from (%d,%d) to (%d,%d), path current=%d/%d\n", 
-           e->x, e->y, next.x, next.y, e->path->current, e->path->length);
 
-    // Store starting position for interpolation
     e->from_x = (float)e->x;
     e->from_y = (float)e->y;
-    
-    // Store destination (don't update logical position yet - that happens when movement completes)
     e->to_x = next.x;
     e->to_y = next.y;
-
-    // Start moving
     e->moving = 1;
     e->move_progress = 0.0f;
+}
+
+// -----------------------------------------------------------------------------
+// Entity Queries
+// -----------------------------------------------------------------------------
+
+Entity* get_player() {
+    for (int i = 0; i < entity_count; i++) {
+        if (entities[i].is_player) return &entities[i];
+    }
+    return NULL;
 }
