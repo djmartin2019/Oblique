@@ -30,14 +30,14 @@ void calculate_move_grid(int start_x, int start_y, int max_cost);
 // Clear all move tiles (reset state)
 void clear_move_grid(void);
 
-// Render movement grid visually (outlines only, no selected highlight)
+// Render movement grid visually
 void draw_move_grid(SDL_Renderer* renderer, Camera* cam);
-
-// Draw the selected tile highlight (call after drawing entities)
-void draw_selected_tile(SDL_Renderer* renderer, Camera* cam);
 
 void select_tile(int tile_x, int tile_y);
 
 void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* tile_y);
+
+int is_tile_in_bounds(int x, int y);
+int is_tile_walkable(int x, int y);
 
 #endif

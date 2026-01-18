@@ -12,7 +12,7 @@ typedef struct {
 } Player;
 
 int init_player(Player* player, SDL_Renderer* renderer);
-void handle_player_input(struct Entity* entity, SDL_Event* event, struct Camera* cam);
+void handle_player_input(Entity* entity, SDL_Event* event);
 void draw_player(Player* player, SDL_Renderer* renderer, struct Camera* cam);
 
 #endif

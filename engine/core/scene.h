@@ -1,13 +1,14 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "render/camera.h"
 #include <SDL2/SDL.h>
 
 typedef enum {
     SCENE_EXPLORE,
     SCENE_COMBAT,
 } SceneType;
+
+#include "render/camera.h"
 
 void set_scene(SceneType type, SDL_Renderer* renderer);
 

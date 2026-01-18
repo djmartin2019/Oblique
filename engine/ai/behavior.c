@@ -5,6 +5,7 @@
 #include "ai/behavior.h"
 #include "ai/ai.h"
 #include "render/render.h"
+#include "navigation/pathfinding.h"
 
 static const Uint8* keystates = NULL;
 static int chase_timer = 0;
@@ -102,12 +103,34 @@ void player_behavior(Entity* self) {
 // -----------------------------------------
 
 void wander_behavior(Entity* self) {
+    // Only pick a new destination if we don't have a path
+    if (self->path) return;
+    
     if (rand() % 100 < 2) {
+        // Pick a random direction
         int dir = rand() % 4;
-        if (dir == 0) self->x += 1;
-        if (dir == 1) self->x -= 1;
-        if (dir == 2) self->y += 1;
-        if (dir == 3) self->y -= 1;
+        int target_x = self->x;
+        int target_y = self->y;
+        
+        if (dir == 0) target_x += 1;
+        else if (dir == 1) target_x -= 1;
+        else if (dir == 2) target_y += 1;
+        else if (dir == 3) target_y -= 1;
+        
+        // Find path to the target
+        Path* path = find_path(self->x, self->y, target_x, target_y);
+        if (path && path->length > 0) {
+            // Free any existing path
+            if (self->path) {
+                free_path(self->path);
+            }
+            self->path = path;
+            self->path->current = 0;
+            self->moving = 0;
+            self->move_progress = 0.0f;
+        } else if (path) {
+            free_path(path);
+        }
     }
 }
 
@@ -116,14 +139,27 @@ void chase_behavior(Entity* self) {
 
     if (!player) return; // Safety check
 
-    if (++chase_timer % 10 != 0) return; // Only moves every 10 ticks
+    // Only update path if we don't have one or we've reached the end
+    if (self->path && self->path->current < self->path->length) {
+        return; // Still following current path
+    }
 
-    // Simple tile-by-tile movement towards player
-    if (self->x < player->x) self->x++;
-    else if (self->x > player->x) self->x--;
+    if (++chase_timer % 10 != 0) return; // Only recalculate path every 10 ticks
 
-    if (self->y < player->y) self->y++;
-    else if (self->y > player->y) self->y--;
+    // Find path to player
+    Path* path = find_path(self->x, self->y, player->x, player->y);
+    if (path && path->length > 0) {
+        // Free any existing path
+        if (self->path) {
+            free_path(self->path);
+        }
+        self->path = path;
+        self->path->current = 0;
+        self->moving = 0;
+        self->move_progress = 0.0f;
+    } else if (path) {
+        free_path(path);
+    }
 }
 
 void idle_behavior(Entity* self) {

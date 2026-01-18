@@ -3,6 +3,7 @@
 
 #include "render/camera.h"
 #include "ai/ai.h"
+#include "navigation/pathfinding.h"
 
 #include <SDL2/SDL.h>
 
@@ -18,6 +19,16 @@ struct Entity {
     int x, y;               // Tile position
     SDL_Texture* sprite;    // Sprite texture
 
+    // Render (pixel) position
+    float render_x;
+    float render_y;
+
+    // Movement interpolation
+    float move_progress;    // 0.0 -> 1.0
+    int moving;
+    int from_x, from_y;
+    int to_x, to_y;
+
     int width, height;      // Sprite dimensions
     int offset_x, offset_y; // Pixel offsets for alignment
     int is_player;          // Flag to identify the player
@@ -29,6 +40,11 @@ struct Entity {
     SDL_Texture* sprite_idle;
     SDL_Texture* sprite_wander;
     SDL_Texture* sprite_chase;
+
+    // Movement / Pathfinding
+    Path* path;             // Current path (NULL if idle)
+    int move_cooldown;      // Ticks until next tile move
+    int move_delay;         // How many ticks between moves
 
     int ap;
 };
@@ -53,5 +69,6 @@ int add_entity(
 
 void draw_entities(SDL_Renderer* renderer, Camera* cam);
 void update_entities();
+void update_entity_movement(Entity* entity);
 
 #endif

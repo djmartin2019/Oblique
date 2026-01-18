@@ -103,40 +103,52 @@ void draw_move_grid(SDL_Renderer* renderer, Camera* cam) {
            // White grid by default
            SDL_Color white = {255, 255, 255, 80};
            draw_iso_tile_outline(renderer, screen_x, screen_y, white);
+
+           // Red fill if selected
+           if (selected_tile.selected && selected_tile.x == x && selected_tile.y == y) {
+               SDL_Color red = {255, 0, 0, 120};
+               fill_iso_tile(renderer, screen_x, screen_y, red);
+           }
         }
-    }
-}
-
-void draw_selected_tile(SDL_Renderer* renderer, Camera* cam) {
-    if (selected_tile.selected) {
-        int x = selected_tile.x;
-        int y = selected_tile.y;
-        
-        // Convert tile coordinates to isometric screen coords
-        int screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x;
-        int screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y;
-
-        // Red fill for selected tile
-        SDL_Color red = {255, 0, 0, 120};
-        fill_iso_tile(renderer, screen_x, screen_y, red);
     }
 }
 
 // Converts screen coordinates to isometric tile coordinates
 // Accounts for camera offset and map offset
+// Reverse of: screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x
 void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* tile_y) {
-    // Add camera offset back to get world coordinates
-    // screen = (x-y)*TW/2 - cam + offset, so world = screen + cam - offset
-    int world_x = screen_x + cam->x - map_offset_x;
-    int world_y = screen_y + cam->y - map_offset_y;
+    // Reverse the camera and map offset to get world coordinates
+    // screen_x = (x - y) * (TILE_WIDTH / 2) - cam->x + map_offset_x
+    // So: (x - y) * (TILE_WIDTH / 2) = screen_x + cam->x - map_offset_x
+    float world_x = (float)(screen_x + cam->x - map_offset_x);
+    
+    // screen_y = (x + y) * (TILE_HEIGHT / 2) - cam->y + map_offset_y
+    // So: (x + y) * (TILE_HEIGHT / 2) = screen_y + cam->y - map_offset_y
+    float world_y = (float)(screen_y + cam->y - map_offset_y);
 
-    // Reverse the isometric projection:
-    // world_x = (x - y) * (TILE_WIDTH / 2)
-    // world_y = (x + y) * (TILE_HEIGHT / 2)
-    // Solving for x and y:
-    // x = (world_x/(TW/2) + world_y/(TH/2)) / 2
-    // y = (world_y/(TH/2) - world_x/(TW/2)) / 2
-    *tile_x = (world_x / (TILE_WIDTH / 2) + world_y / (TILE_HEIGHT / 2)) / 2;
-    *tile_y = (world_y / (TILE_HEIGHT / 2) - world_x / (TILE_WIDTH / 2)) / 2;
+    // Now reverse the isometric projection using floating point for accuracy:
+    // world_x = (x - y) * (TILE_WIDTH / 2)  =>  x - y = world_x / (TILE_WIDTH / 2)
+    // world_y = (x + y) * (TILE_HEIGHT / 2) =>  x + y = world_y / (TILE_HEIGHT / 2)
+    // Solving: x = ((x+y) + (x-y)) / 2, y = ((x+y) - (x-y)) / 2
+    float half_tile_w = (float)(TILE_WIDTH / 2);
+    float half_tile_h = (float)(TILE_HEIGHT / 2);
+    
+    float x_minus_y = world_x / half_tile_w;
+    float x_plus_y = world_y / half_tile_h;
+    
+    *tile_x = (int)((x_plus_y + x_minus_y) / 2.0f + 0.5f);  // Round to nearest
+    *tile_y = (int)((x_plus_y - x_minus_y) / 2.0f + 0.5f);  // Round to nearest
 }
 
+
+int is_tile_in_bounds(int x, int y) {
+    return (x >= 0 && x < MAP_WIDTH &&
+            y >= 0 && y < MAP_HEIGHT);
+}
+
+int is_tile_walkable(int x, int y) {
+    if (!is_tile_in_bounds(x, y))
+        return 0;
+
+    return map_is_walkable(x, y);
+}

@@ -3,6 +3,15 @@
 
 int tile_map[MAP_HEIGHT][MAP_WIDTH];
 
+int map_is_walkable(int x, int y) {
+    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
+        return 0;
+
+    // Convention: 0 = walkable (ground), non-zero = blocked (walls/obstacles)
+    // This matches the map file where 0 means empty/walkable terrain
+    return tile_map[y][x] == 0;
+}
+
 int load_map(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (!file) {

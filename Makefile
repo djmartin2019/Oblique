@@ -18,7 +18,8 @@ SRC = \
     engine/entity/player.c \
     engine/ai/behavior.c \
     engine/ui/ui.c \
-	engine/navigation/grid.c
+	engine/navigation/grid.c \
+	engine/navigation/pathfinding.c
 
 BIN = oblique
 

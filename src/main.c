@@ -6,7 +6,6 @@
 #include "entity/player.h"
 #include "ai/behavior.h"
 #include "helpers/sdl_helpers.h"
-#include "navigation/grid.h"
 
 #include <stdio.h>
 
@@ -20,14 +19,15 @@ void game_loop(SDL_Renderer* renderer) {
 
     while (running) {
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) running = 0;
-
+            if (e.type == SDL_QUIT) {
+                running = 0;
+            }
+            
             // Feed input into player behavior system
             if (e.type == SDL_MOUSEBUTTONDOWN) {
                 Entity* player = get_player();
-                Camera* cam = get_camera();
-                if (player && cam) {
-                    handle_player_input(player, &e, cam);
+                if (player) {
+                    handle_player_input(player, &e);
                 }
             }
         }

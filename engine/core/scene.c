@@ -35,13 +35,11 @@ void setup_explore_scene(SDL_Renderer* renderer) {
             5, 5,
             player_texture,
             32, 64,
-            // Center horizontally: tile center is at screen_x + TILE_WIDTH/2
-            // Sprite is 32px wide, so offset = TILE_WIDTH/2 - sprite_width/2 = 32 - 16 = 16
-            16,
-            // Position bottom of sprite at tile center: tile center is at screen_y + TILE_HEIGHT/2
-            // Sprite is 64px tall, so offset = TILE_HEIGHT/2 - sprite_height = 16 - 64 = -48
-            // This places the sprite's feet at the tile center
-            -48,
+            16,   // offset_x: center sprite horizontally (TILE_WIDTH/2 - sprite_width/2 = 32 - 16 = 16)
+            -48,  // offset_y: align feet with tile center
+                  // Tile center is at TILE_HEIGHT/2 = 16px from tile top
+                  // Sprite bottom should be at tile center, so: offset_y + sprite_height = TILE_HEIGHT/2
+                  // Therefore: offset_y = 16 - 64 = -48
             1,
             player_behavior
     );
@@ -51,7 +49,7 @@ void setup_explore_scene(SDL_Renderer* renderer) {
     SDL_Texture* npc_tex  = SDL_CreateTextureFromSurface(renderer, npc_surf);
     SDL_FreeSurface(npc_surf);
 
-    int npc_id = add_entity(10, 10, npc_tex, 32, 64, -16, -48, 0, wander_behavior);
+    int npc_id = add_entity(10, 10, npc_tex, 32, 64, 16, -48, 0, wander_behavior);
     entities[npc_id].state = STATE_IDLE;
     entities[npc_id].sprite_idle   = npc_tex;
     entities[npc_id].sprite_wander = npc_tex;
@@ -98,10 +96,9 @@ void update_scene() {
 void render_scene(SDL_Renderer* renderer) {
     calculate_map_offset();
     draw_map(renderer, &camera);            // 1. draw map tiles
-    draw_move_grid(renderer, &camera);      // 2. draw grid outlines
-    draw_selected_tile(renderer, &camera);  // 3. draw selected tile highlight (under player)
-    draw_entities(renderer, &camera);       // 4. draw player + NPCs (on top)
-                                            // 5. UI (Coming soon)
+    draw_move_grid(renderer, &camera);      // 2. draw grid UNDER player
+    draw_entities(renderer, &camera);       // 3. draw player + NPCs
+                                            // 4. UI (Coming soon)
 
     if (current_scene == SCENE_COMBAT) {
         // renderer_combat_ui(renderer);
