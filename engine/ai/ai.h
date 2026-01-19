@@ -4,7 +4,8 @@
 typedef enum {
     STATE_IDLE,
     STATE_WANDER,
-    STATE_CHASE
+    STATE_CHASE,
+    STATE_COMBAT
 } AIState;
 
 #endif

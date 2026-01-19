@@ -10,6 +10,8 @@
 
 static const Uint8* keystates = NULL;
 static int chase_timer = 0;
+#define CHASE_RANGE 5
+#define COMBAT_RANGE 2
 
 // -----------------------------------------
 // AI Transition Conditions (Stubs for now)
@@ -23,7 +25,20 @@ int sees_player(Entity* self) {
         if (other->is_player) {
             int dx = abs(other->x - self->x);
             int dy = abs(other->y - self->y);
-            return (dx + dy) <= 5;                  // Within distance of 5
+            return (dx + dy) <= CHASE_RANGE;
+        }
+    }
+
+    return 0;
+}
+
+int is_in_combat_range(Entity* self) {
+    for (int i = 0; i < entity_count; i++) {
+        Entity* other = &entities[i];
+        if (other->is_player) {
+            int dx = abs(other->x - self->x);
+            int dy = abs(other->y - self->y);
+            return (dx + dy) <= COMBAT_RANGE;
         }
     }
 
@@ -52,6 +67,9 @@ void npc_brain(Entity* self) {
             if (should_wander()) {
                 self->state = STATE_WANDER;
                 self->behavior = wander_behavior;
+            } else if (sees_player(self)) {
+                self->state = STATE_CHASE;
+                self->behavior = chase_behavior;
             }
             break;
         case STATE_WANDER:
@@ -61,7 +79,16 @@ void npc_brain(Entity* self) {
             }
             break;
         case STATE_CHASE:
-            if (lost_player(self)) {
+            if (is_in_combat_range(self) || is_combat_forced()) {
+                self->state = STATE_COMBAT;
+                self->behavior = combat_behavior;
+            } else if (lost_player(self)) {
+                self->state = STATE_IDLE;
+                self->behavior = idle_behavior;
+            }
+            break;
+        case STATE_COMBAT:
+            if (lost_player(self) && !is_combat_forced()) {
                 self->state = STATE_IDLE;
                 self->behavior = idle_behavior;
             }
@@ -77,6 +104,9 @@ void npc_brain(Entity* self) {
             self->sprite = self->sprite_wander ? self->sprite_wander : self->sprite;
             break;
         case STATE_CHASE:
+            self->sprite = self->sprite_chase ? self->sprite_chase : self->sprite;
+            break;
+        case STATE_COMBAT:
             self->sprite = self->sprite_chase ? self->sprite_chase : self->sprite;
             break;
     }
@@ -155,6 +185,30 @@ void chase_behavior(Entity* self) {
     Path* path = find_path(self->x, self->y, player->x, player->y);
     if (path && path->length > 0) {
         // Free any existing path
+        if (self->path) {
+            free_path(self->path);
+        }
+        self->path = path;
+        self->path->current = 0;
+        self->moving = 0;
+        self->move_progress = 0.0f;
+    } else if (path) {
+        free_path(path);
+    }
+}
+
+void combat_behavior(Entity* self) {
+    if (is_combat_active() && !is_entity_turn(self)) return;
+
+    Entity* player = get_player();
+    if (!player) return;
+
+    if (self->path && self->path->current < self->path->length) {
+        return;
+    }
+
+    Path* path = find_path(self->x, self->y, player->x, player->y);
+    if (path && path->length > 0) {
         if (self->path) {
             free_path(self->path);
         }

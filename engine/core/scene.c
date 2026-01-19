@@ -17,11 +17,12 @@ static SceneType current_scene = SCENE_EXPLORE;
 static int player_id = -1;
 static Camera camera;
 static int combat_active = 0;
+static int combat_forced = 0;
 static int active_turn_index = 0;
 static int turn_started = 0;
 
-#define COMBAT_TRIGGER_RANGE 5
-#define COMBAT_CLEAR_RANGE 7
+static void start_combat(void);
+static void end_combat(void);
 
 SceneType get_scene() {
     return current_scene;
@@ -29,6 +30,21 @@ SceneType get_scene() {
 
 int is_combat_active(void) {
     return combat_active;
+}
+
+int is_combat_forced(void) {
+    return combat_forced;
+}
+
+void force_combat(void) {
+    combat_forced = 1;
+    if (!combat_active) {
+        start_combat();
+    }
+}
+
+void clear_forced_combat(void) {
+    combat_forced = 0;
 }
 
 int is_entity_turn(Entity* e) {
@@ -44,21 +60,12 @@ static int find_player_index(void) {
     return -1;
 }
 
-static int is_enemy_near_player(int range) {
-    int player_index = find_player_index();
-    if (player_index < 0) return 0;
-
-    Entity* player = &entities[player_index];
-
+static int any_npc_in_combat(void) {
     for (int i = 0; i < entity_count; i++) {
         Entity* other = &entities[i];
         if (other->is_player) continue;
-
-        int dx = abs(other->x - player->x);
-        int dy = abs(other->y - player->y);
-        if ((dx + dy) <= range) return 1;
+        if (other->state == STATE_COMBAT) return 1;
     }
-
     return 0;
 }
 
@@ -71,20 +78,21 @@ static void start_combat(void) {
 
 static void end_combat(void) {
     combat_active = 0;
+    combat_forced = 0;
     active_turn_index = 0;
     turn_started = 0;
 }
 
 static void update_combat_state(void) {
-    if (!combat_active) {
-        if (is_enemy_near_player(COMBAT_TRIGGER_RANGE)) {
-            printf("CombatState: ENTER combat\n");
-            start_combat();
-        }
+    int npc_combat = any_npc_in_combat();
+
+    if (!combat_active && (npc_combat || combat_forced)) {
+        printf("CombatState: ENTER combat\n");
+        start_combat();
         return;
     }
 
-    if (!is_enemy_near_player(COMBAT_CLEAR_RANGE)) {
+    if (combat_active && !npc_combat && !combat_forced) {
         printf("CombatState: EXIT combat\n");
         end_combat();
     }
@@ -153,10 +161,12 @@ static void update_combat_turns(void) {
         start_active_turn();
     }
 
-    if (!active->is_player && !active->moving) {
+    if (!active->moving) {
         int path_done = !active->path || active->path->current >= active->path->length;
-        if (path_done && active->ap_current > 0) {
-            active->ap_current = 0;
+
+        if (!active->is_player && path_done) {
+            advance_turn();
+            return;
         }
     }
 
@@ -227,8 +237,6 @@ void update_scene() {
         calculate_move_grid(player->x, player->y, 10);
     }
 
-    update_combat_state();
-
     switch (current_scene) {
         case SCENE_EXPLORE:
             update_entities();          // Behaviors, movement, etc.
@@ -239,6 +247,7 @@ void update_scene() {
             break;
     }
 
+    update_combat_state();
     update_combat_turns();
 }
 

@@ -16,6 +16,9 @@ void set_scene(SceneType type, SDL_Renderer* renderer);
 
 SceneType get_scene();
 int is_combat_active(void);
+int is_combat_forced(void);
+void force_combat(void);
+void clear_forced_combat(void);
 int is_entity_turn(struct Entity* e);
 
 void update_scene();
