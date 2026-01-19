@@ -6,6 +6,7 @@
 #include "render/render.h"
 #include "ai/behavior.h"
 #include "core/constants.h"
+#include "core/scene.h"
 
 // -----------------------------------------------------------------------------
 // Constants
@@ -53,6 +54,8 @@ int add_entity(int x, int y, SDL_Texture* sprite, int width, int height, int off
     e->path = NULL;
     e->move_cooldown = 0;
     e->move_delay = 6;
+    e->ap_max = DEFAULT_AP_MAX;
+    e->ap_current = DEFAULT_AP_MAX;
 
     return entity_count - 1;
 }
@@ -127,6 +130,10 @@ void update_entities() {
 void update_entity_movement(Entity* e) {
     if (!e) return;
     
+    if (is_combat_active() && !is_entity_turn(e)) {
+        return;
+    }
+
     if (!e->path) {
         return;
     }
@@ -177,6 +184,13 @@ void update_entity_movement(Entity* e) {
 
     // Start movement to next tile
     PathNode next = e->path->nodes[e->path->current];
+
+    if (is_combat_active()) {
+        if (e->ap_current <= 0) {
+            return;
+        }
+        e->ap_current -= 1;
+    }
 
     e->from_x = (float)e->x;
     e->from_y = (float)e->y;

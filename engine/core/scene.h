@@ -3,6 +3,8 @@
 
 #include <SDL2/SDL.h>
 
+struct Entity;
+
 typedef enum {
     SCENE_EXPLORE,
     SCENE_COMBAT,
@@ -13,6 +15,8 @@ typedef enum {
 void set_scene(SceneType type, SDL_Renderer* renderer);
 
 SceneType get_scene();
+int is_combat_active(void);
+int is_entity_turn(struct Entity* e);
 
 void update_scene();
 void setup_explore_scene(SDL_Renderer* renderer);

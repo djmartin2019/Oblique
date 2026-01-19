@@ -52,6 +52,10 @@ void draw_player(Player* player, SDL_Renderer* renderer, Camera* cam) {
 // -----------------------------------------------------------------------------
 
 void handle_player_input(Entity* entity, SDL_Event* event) {
+    if (is_combat_active() && !is_entity_turn(entity)) {
+        return;
+    }
+
     if (event->type == SDL_MOUSEBUTTONDOWN && event->button.button == SDL_BUTTON_LEFT) {
         int mouse_x = event->button.x;
         int mouse_y = event->button.y;

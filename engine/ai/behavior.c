@@ -4,6 +4,7 @@
 #include "entity/entity.h"
 #include "ai/behavior.h"
 #include "ai/ai.h"
+#include "core/scene.h"
 #include "render/render.h"
 #include "navigation/pathfinding.h"
 
@@ -103,6 +104,8 @@ void player_behavior(Entity* self) {
 // -----------------------------------------
 
 void wander_behavior(Entity* self) {
+    if (is_combat_active() && !is_entity_turn(self)) return;
+
     // Only pick a new destination if we don't have a path
     if (self->path) return;
     
@@ -135,6 +138,8 @@ void wander_behavior(Entity* self) {
 }
 
 void chase_behavior(Entity* self) {
+    if (is_combat_active() && !is_entity_turn(self)) return;
+
     Entity* player = get_player();
 
     if (!player) return; // Safety check

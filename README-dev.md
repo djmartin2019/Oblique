@@ -262,6 +262,18 @@ void update_entity_movement(Entity* e) {
 
 ---
 
+## ⚔️ Combat-Only AP Movement
+
+Movement is **free outside of combat** and **AP-gated during combat**:
+
+- **Explore mode**: entities follow paths without AP/turn limits.
+- **Combat mode**: each entity spends **1 AP per tile**; turns rotate once AP hits 0.
+- **Auto combat trigger**: combat turns on when an NPC is within range of the player and turns off when all NPCs are out of range.
+
+AP is only consumed when a tile step begins. If AP hits 0, movement pauses until the entity’s next turn.
+
+---
+
 ## 🤖 AI Behaviors with Pathfinding
 
 NPCs use the same pathfinding system as the player:

@@ -34,6 +34,7 @@
 // -----------------------------------------------------------------------------
 
 #define MAX_ENTITIES 128  // Maximum number of entities in the world
+#define DEFAULT_AP_MAX 6  // Default action points per combat turn
 
 // -----------------------------------------------------------------------------
 // Types
@@ -121,7 +122,9 @@ struct Entity {
     int move_cooldown;      // Ticks remaining until next tile movement
     int move_delay;         // Ticks to wait between tile movements (speed control)
 
-    int ap;                 // Action points (for future combat system)
+    // Combat action points (used only in combat)
+    int ap_max;             // Maximum AP per turn
+    int ap_current;         // Remaining AP this turn
 };
 
 // -----------------------------------------------------------------------------
