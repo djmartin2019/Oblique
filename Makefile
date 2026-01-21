@@ -8,6 +8,7 @@ SDL_LIBS = `sdl2-config --libs` -lSDL2_image
 SRC = \
     src/main.c \
     engine/core/map.c \
+	engine/core/tile.c \
     engine/core/scene.c \
     engine/core/input.c \
     engine/core/constants.c \

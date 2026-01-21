@@ -216,26 +216,4 @@ void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* ti
 // tile coordinates before accessing map data.
 int is_tile_in_bounds(int x, int y);
 
-// Checks if a tile is walkable (can be moved onto).
-//
-// This function combines bounds checking with map walkability checks.
-// A tile is walkable if:
-// 1. It is within map bounds
-// 2. The map data indicates it's walkable (tile_map[y][x] == 0)
-//
-// Args:
-//   x: Tile X coordinate to check
-//   y: Tile Y coordinate to check
-//
-// Returns:
-//   1 if the tile is walkable
-//   0 if the tile is out of bounds or blocked
-//
-// Walkability convention:
-// - 0 = walkable (ground/empty)
-// - Non-zero = blocked (wall/obstacle)
-//
-// This function is used by the pathfinding system to determine valid movement.
-int is_tile_walkable(int x, int y);
-
 #endif  // NAVIGATION_GRID_H

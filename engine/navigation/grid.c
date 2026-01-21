@@ -4,6 +4,7 @@
 #include "navigation/grid.h"
 #include "core/map.h"
 #include "core/constants.h"
+#include "core/tile.h"
 
 #include <string.h>
 #include <SDL2/SDL.h>
@@ -44,7 +45,7 @@ void calculate_move_grid(int start_x, int start_y, int max_cost) {
     while (head < tail) {
         Node current = queue[head++];
 
-        if (current.x < 0 || current.x >= MAP_WIDTH || 
+        if (current.x < 0 || current.x >= MAP_WIDTH ||
             current.y < 0 || current.y >= MAP_HEIGHT) {
             continue;
         }
@@ -149,10 +150,10 @@ void screen_to_iso(int screen_x, int screen_y, Camera* cam, int* tile_x, int* ti
     // Solving: x = ((x+y) + (x-y)) / 2, y = ((x+y) - (x-y)) / 2
     float half_tile_w = (float)(TILE_WIDTH / 2);
     float half_tile_h = (float)(TILE_HEIGHT / 2);
-    
+
     float x_minus_y = world_x / half_tile_w;
     float x_plus_y = world_y / half_tile_h;
-    
+
     *tile_x = (int)((x_plus_y + x_minus_y) / 2.0f + 0.5f);
     *tile_y = (int)((x_plus_y - x_minus_y) / 2.0f + 0.5f);
 }
@@ -165,9 +166,3 @@ int is_tile_in_bounds(int x, int y) {
     return (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT);
 }
 
-int is_tile_walkable(int x, int y) {
-    if (!is_tile_in_bounds(x, y)) {
-        return 0;
-    }
-    return map_is_walkable(x, y);
-}

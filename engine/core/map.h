@@ -1,6 +1,8 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include "core/constants.h"
+
 #define MAP_WIDTH 20
 #define MAP_HEIGHT 20
 

@@ -4,6 +4,7 @@
 #include "navigation/pathfinding.h"
 #include "navigation/grid.h"
 #include "core/constants.h"
+#include "core/tile.h"
 
 #include <stdlib.h>
 #include <limits.h>
@@ -14,6 +15,7 @@
 // -----------------------------------------------------------------------------
 
 #define MAX_PATH_LENGTH 256
+#define MIN_TILE_COST 1
 
 // Internal node representation for A* algorithm.
 // Exists only during pathfinding and is discarded afterwards.
@@ -33,7 +35,7 @@ typedef struct {
 // -----------------------------------------------------------------------------
 
 static int heuristic(int x1, int y1, int x2, int y2) {
-    return abs(x1 - x2) + abs(y1 - y2);
+    return (abs(x1 - x2) + abs(y1 - y2)) * MIN_TILE_COST;
 }
 
 static Node* get_node(Node* nodes, int x, int y) {
@@ -77,9 +79,6 @@ static Path* reconstruct_path(Node* nodes, Node* goal, int start_x, int start_y)
         current = get_node(nodes, current->parent_x, current->parent_y);
     }
 
-    // Always add the start node (before reversing)
-    path->nodes[path->length++] = (PathNode) { start_x, start_y };
-
     // Reverse path so it runs from start -> goal
     for (int i = 0; i < path->length / 2; i++) {
         PathNode tmp = path->nodes[i];
@@ -117,7 +116,7 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
         printf("Pathfinding: Start tile (%d,%d) is not walkable\n", start_x, start_y);
         return NULL;
     }
-    
+
     if (!is_tile_walkable(goal_x, goal_y)) {
         printf("Pathfinding: Goal tile (%d,%d) is not walkable\n", goal_x, goal_y);
         return NULL;
@@ -179,9 +178,9 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
             Node* neighbor = get_node(nodes, nx, ny);
             if (neighbor->in_closed) continue;
 
-            int tentative_g = current->g_cost + 1;
+            int tentative_g = current->g_cost + tile_move_cost(nx, ny);
 
-            if (!neighbor->in_open || tentative_g < neighbor->g_cost) {
+            if (tentative_g < neighbor->g_cost) {
                 neighbor->parent_x = current->x;
                 neighbor->parent_y = current->y;
                 neighbor->g_cost = tentative_g;
@@ -193,7 +192,7 @@ Path* find_path(int start_x, int start_y, int goal_x, int goal_y) {
     }
 
     // No path found
-    printf("Pathfinding: A* algorithm exhausted all possibilities, no path found from (%d,%d) to (%d,%d)\n", 
+    printf("Pathfinding: A* algorithm exhausted all possibilities, no path found from (%d,%d) to (%d,%d)\n",
            start_x, start_y, goal_x, goal_y);
     free(nodes);
     return NULL;
